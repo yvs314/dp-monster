@@ -6,4 +6,4 @@ Dynamic programming and derived solvers, mostly for TSP with precedence constrai
 ~~~
 int debugRun=0; 
 ~~~
-Not 1. Not 2. Not **anything** but ZERO!
+Not 1. Not 2. Not **anything**, just 0, ZERO!
