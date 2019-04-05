@@ -2,7 +2,7 @@
 Dynamic programming and derived solvers, mostly for TSP with precedence constraints
 
 ## Merge-into-main checks:
-* check monster-main.cpp::
+* check monster-main.cpp to feature
 ~~~
 int debugRun=0; 
 ~~~
