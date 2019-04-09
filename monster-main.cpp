@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 //	bool exactRequested = false;
 	//bool debugRun = true;
 	int debugRun = 0;
-	//int debugRun = 2;
+	//int debugRun = 1;
 	int myargc = argc; 
 	t_lines myargv = args2lines(argc,argv);
 	
@@ -98,26 +98,41 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
+	//==Instance=with=preprocessing--rm-trans====
+	t_Instance testInstP = t_Instance(
+		getDesc(input)
+		, getName(input)
+		, request.Type.second
+		, getPrepCstMx(getCstMx(input)) //cost matrix is _preprocessed_: dual and transitive are removed
+		, getPrec(getCstMx(input)));
+	//std::exit(EXIT_SUCCESS); //dangerous!
+	
+ //BACKUP: no preprocessing; e.g. for GTSP; might adapt later
 	t_Instance testInst = t_Instance(
 		getDesc(input)
 		, getName(input)
 		, request.Type.second 
 		, getCstMx(input) //to be replaced with preprocess.getCstMx input
 		, getPrec(getCstMx(input)));
+	
+	
 	//TMP===DEBUG-LB==BLK
 	//{//it's such a dirty hack, but it works; run a.out WAT.sop > WAT.sop.dump.lb
-	//	auto lb = elCheapoLB(0, testInst.wkOrd.omask, testInst, FWD);
-	//	std::cout<<"VALUE:"<<lb.first<<"\n\n"<<"SOLUTION:vertexFrom;vertexTo;arcCost\n"<<dumpArcs(lb.second);
+	//	auto lbP = elCheapoLB(0, testInst.wkOrd.omask, testInstP, FWD); // with preprocessing & INFs
+	//	auto lb = elCheapoLB(0, testInst.wkOrd.omask, testInst, FWD); // without that
+	//	std::cout << "\nVALUE-P;VALUE-NO-P:" << lbP.first << ";" << lb.first
+	//		<< "\n\n" << "SOLUTION-P:vertexFrom;vertexTo;arcCost\n" << dumpArcs(lbP.second)
+	//		<< "\n\n" << "SOLUTION-NO-P:vertexFrom;vertexTo;arcCost\n" << dumpArcs(lb.second) << "\n\n";
 	//	return 0;
 	//}
 	//-------------------/
 
 	//first try DP-BB; would consider restricted DP-BB m*u*c*h later
 	if (request.UB.first==e_parState::present)
-	{
-		t_BBDP testSln(testInst, request.D.second, request.UB.second, "CHP");
+	{//note testInstP, with P for Preprocessing (transitive edges removed through cost=INF)
+		t_BBDP testSln(testInstP, request.D.second, request.UB.second, "CHP");
 		std::cerr << "Requested dynamic programming with branch and bound, UB=" << request.UB.second
-			<< "\nDirection:" << getDirectionCode(request.D.second) << "\n";
+			<< "\nDirection:" << getDirectionCode(request.D.second) << "\n Preprocessing engaged\n";
 		testSln.solve();
 	}
 	//if breadth was specified (not zero)
@@ -142,7 +157,28 @@ int main(int argc, char* argv[])
 }
 //------------------------------------/
 //======BIT========BUCKET=============/
-	//if (debugRun==1)
+//{//it's such a dirty hack, but it works; run a.out WAT.sop > WAT.sop.dump.lb
+	//	auto lb = elCheapoLB(0, testInst.wkOrd.omask, testInst, FWD);
+	//	std::cout<<"VALUE:"<<lb.first<<"\n\n"<<"SOLUTION:vertexFrom;vertexTo;arcCost\n"<<dumpArcs(lb.second);
+	//	return 0;
+	//}	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//if (debugRun==1)
 	//{
 	//	/*myargc = 2;
 	//	myargv[0] = argv[0];

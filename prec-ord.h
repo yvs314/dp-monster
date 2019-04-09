@@ -92,9 +92,9 @@ inline t_vprecDsc compose(const t_vprecDsc& L, const t_vprecDsc& R)
 			newPairs.receives_from.any() && newPairs.sends_to.any())
 		{
 			//add all c's as "above" this a
-			foreach_elt(a, newPairs.receives_from, L.size()) out[a].sends_to |= newPairs.sends_to;
+			foreach_elt(a, newPairs.receives_from, L.size()-1) out[a].sends_to |= newPairs.sends_to;
 			//add all a's as "below" this c
-			foreach_elt(c, newPairs.sends_to, L.size()) out[c].receives_from |= newPairs.receives_from;
+			foreach_elt(c, newPairs.sends_to, L.size()-1) out[c].receives_from |= newPairs.receives_from;
 		}
 	}
 	return out;
