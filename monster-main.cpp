@@ -19,7 +19,7 @@ A third update of the original **2011 solver**'s 2016 modular rewrite.
 //tmp-debug:
 #include"lower-bound.h"
 
-const std::string usage = " filename.sop [-H breadth] [-d FWD | BWD] [-t TSP | BTSP | TD_TSPb | etc] [--UB upper_bound]";
+const std::string usage = " filename.sop [--noP] [-H breadth] [-d FWD | BWD] [-t TSP | BTSP | TD_TSPb | etc] [--UB upper_bound]";
 
 
 /* wat.exe $name.sop -H $breadth
@@ -27,12 +27,13 @@ const std::string usage = " filename.sop [-H breadth] [-d FWD | BWD] [-t TSP | B
 solve it by RT-DP with at most $breadth arguments
 exit if refdim is less than the problem's size
 NB!: refdim must be set in the code, i.e, makefile-build if I ever get to automate it
+--noP : disable preprocessing (default: do preprocessing, i.e., set costs of transitive and dual edges to INF)
 -H breadth: 1..inf, if absent then exact DP
 -d FWD | BWD, if absent default to BWD, if erroneous, terminate
 -t TSP | BTSP | TD_TSPb | TD_TSPf | GTSP | BGTSP, if absent default to TSP, if erroneous, terminate
 also, test if requested type matches direction: (*b <-> BWD), (*f <-> FWD)
 --UB 0 | 1 | ... given upper bound, to use with DPBB; "long" option
-
+DO NOT COMBINE -H  and --UB yet; right now, --UB is silently given priority
 */
 //
 
@@ -73,7 +74,7 @@ int main(int argc, char* argv[])
 
 	//=========PARSE===COMMAND===LINE==&==EXECUTE===================/
 	//fail if input file name is not specified or there are too many arguments (not combining -H $breadht and --UB $bound yet)
-	if (myargc>8 || myargc==1) { std::cerr << myargv[0] << usage; exit(EXIT_FAILURE); }
+	if (myargc>9 || myargc==1) { std::cerr << myargv[0] << usage; exit(EXIT_FAILURE); }
 	
 	std::string ifName = myargv[1];
 	std::ifstream fin;
@@ -115,7 +116,13 @@ int main(int argc, char* argv[])
 		, getCstMx(input) //to be replaced with preprocess.getCstMx input
 		, getPrec(getCstMx(input)));
 	
-	
+	t_Instance theInstance = (request.noP.second == true) //if --noP key is set
+		? (testInst)//ABANDON preprocessing
+		: (testInstP);//if not, then DO preprocessing
+
+	if (request.noP.second == false) //if --noP key was NOT set, say we're doing it!
+		std::cerr << "\n Preprocessing engaged.\n";
+
 	//TMP===DEBUG-LB==BLK
 	//{//it's such a dirty hack, but it works; run a.out WAT.sop > WAT.sop.dump.lb
 	//	auto lbP = elCheapoLB(0, testInst.wkOrd.omask, testInstP, FWD); // with preprocessing & INFs
@@ -130,22 +137,22 @@ int main(int argc, char* argv[])
 	//first try DP-BB; would consider restricted DP-BB m*u*c*h later
 	if (request.UB.first==e_parState::present)
 	{//note testInstP, with P for Preprocessing (transitive edges removed through cost=INF)
-		t_BBDP testSln(testInstP, request.D.second, request.UB.second, "CHP");
+		t_BBDP testSln(theInstance, request.D.second, request.UB.second, "CHP");
 		std::cerr << "Requested dynamic programming with branch and bound, UB=" << request.UB.second
-			<< "\nDirection:" << getDirectionCode(request.D.second) << "\n Preprocessing engaged\n";
+			<< "\nDirection:" << getDirectionCode(request.D.second) << "\n"; 
 		testSln.solve();
 	}
 	//if breadth was specified (not zero)
 	else if (request.B.first==e_parState::present)
 	{
-		t_hRtDP testSln(testInst, request.D.second, request.B.second);
+		t_hRtDP testSln(theInstance, request.D.second, request.B.second);
 		std::cerr << "Requested heuristic: hRtDP, breadth=" << request.B.second
 			<< "\nDirection:" <<getDirectionCode(request.D.second) <<"\n";
 		testSln.solve();
 	}
 	else//breadth was not specified: exact DP requested
 	{
-		t_DP testSln(testInst, request.D.second);
+		t_DP testSln(theInstance, request.D.second);
 		std::cerr << "Requested exact dynamic programming" << "\nDirection:" << getDirectionCode(request.D.second) << "\n"; 
 		testSln.solve();
 	}

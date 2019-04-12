@@ -147,6 +147,8 @@ struct t_binHash
 #define foreach_elt(x,X,crd)  for(auto x=ssb(X,0,crd);x<=crd;x=ssb(X,x,crd))
 #define foreach_point(p,pfirst,plast) for (ptag p=pfirst; p<=plast;p++)
 
+//TODO: inline to_uset: t_bin -> std::unordered_set<mtag>; also, mtag -> std::unordered_set<ptag> (?)
+
 #endif
 
 //macro for accessing, in a cycle, each element of X, where crd=|X|; requires a body!
