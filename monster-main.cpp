@@ -40,10 +40,8 @@ DO NOT COMBINE -H  and --UB yet; right now, --UB is silently given priority
 
 int main(int argc, char* argv[])
 {
-//	bool exactRequested = false;
-	//bool debugRun = true;
-	int debugRun = 0;
-	//int debugRun = 1;
+	//int debugRun = 0;
+	int debugRun = 3;
 	int myargc = argc; 
 	t_lines myargv = args2lines(argc,argv);
 	
@@ -51,6 +49,7 @@ int main(int argc, char* argv[])
 	{
 	case 1:	
 		std::cerr << "Requested debug run no."<<debugRun<<"\n";
+		myargv.clear();
 		myargc = 4;
 		myargv.resize(myargc);
 		myargv[0] = argv[0];
@@ -60,6 +59,7 @@ int main(int argc, char* argv[])
 		break;
 	case 2:
 		std::cerr << "Requested debug run no." << debugRun << "\n";
+		myargv.clear();
 		myargc = 6;
 		myargv.resize(myargc);
 		myargv[0] = argv[0];
@@ -69,11 +69,23 @@ int main(int argc, char* argv[])
 		myargv[4] = "--UB";
 		myargv[5] = "3000";
 		break;
+	case 3:
+		std::cerr << "Requested debug run no." << debugRun << "\n";
+		myargv.clear();
+		//myargc = 3;
+		//myargv.resize(myargc);
+		myargv.push_back(argv[0]);
+		myargv.push_back("ESC07.sop");
+		myargv.push_back("--noP");
+		myargc = myargv.size();
+		/*myargv.push_back("-d");
+		myargv.push_back("FWD");*/
+		break;
 	default: std::cerr << "This is not a drill.\n";
 	}
 
 	//=========PARSE===COMMAND===LINE==&==EXECUTE===================/
-	//fail if input file name is not specified or there are too many arguments (not combining -H $breadht and --UB $bound yet)
+	//fail if input file name is not specified or there are too many arguments (not combining -H $breadth and --UB $bound yet)
 	if (myargc>9 || myargc==1) { std::cerr << myargv[0] << usage; exit(EXIT_FAILURE); }
 	
 	std::string ifName = myargv[1];

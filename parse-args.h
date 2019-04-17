@@ -65,7 +65,7 @@ auto keyFound(const std::string key, const t_lines& iargs)
 		argCt++;
 	if (argCt < iargs.size()-1 || //key found and it could have a value
 		(argCt == iargs.size() - 1 && iargs.at(argCt) == "--noP") ) //unary key found
-		return std::make_pair(iargs.at(argCt + 1), true);
+		return std::make_pair(iargs.at(argCt), true);
 	else if (argCt == iargs.size() - 1 )
 		return std::make_pair("ERROR: key " + key + " has no value", false);
 	else  //argCt==pos, key not found
