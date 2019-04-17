@@ -41,48 +41,46 @@ DO NOT COMBINE -H  and --UB yet; right now, --UB is silently given priority
 int main(int argc, char* argv[])
 {
 	int debugRun = 0;
-	//int debugRun = 3;
+	//int debugRun = 4;
 	int myargc = argc; 
 	t_lines myargv = args2lines(argc,argv);
 	
-	switch (debugRun)
+	if (debugRun > 0)
 	{
-	case 1:	
-		std::cerr << "Requested debug run no."<<debugRun<<"\n";
-		myargv.clear();
-		myargc = 4;
-		myargv.resize(myargc);
-		myargv[0] = argv[0];
-		myargv[1] = "ESC07.sop";//"br17.12.sop";//"p43.4.sop";//"ry48p.4.sop";//"toy05.sop";
-		myargv[2] = "-d";
-		myargv[3] = "FWD";
-		break;
-	case 2:
 		std::cerr << "Requested debug run no." << debugRun << "\n";
 		myargv.clear();
-		myargc = 6;
-		myargv.resize(myargc);
-		myargv[0] = argv[0];
-		myargv[1] = "ESC07.sop";//"br17.12.sop";//"p43.4.sop";//"ry48p.4.sop";//"toy05.sop";
-		myargv[2] = "-d";
-		myargv[3] = "FWD";
-		myargv[4] = "--UB";
-		myargv[5] = "3000";
-		break;
-	case 3:
-		std::cerr << "Requested debug run no." << debugRun << "\n";
-		myargv.clear();
-		//myargc = 3;
-		//myargv.resize(myargc);
-		myargv.push_back(argv[0]);
-		myargv.push_back("ESC07.sop");
-		myargv.push_back("--noP");
-		myargc = myargv.size();
-		/*myargv.push_back("-d");
-		myargv.push_back("FWD");*/
-		break;
-	default: std::cerr << "This is not a drill.\n";
+
+		switch (debugRun)
+		{
+		case 3:
+			myargv.push_back(argv[0]);
+			myargv.push_back("ESC07.sop");
+			myargv.push_back("--noP");
+			/*myargv.push_back("-d");
+			myargv.push_back("FWD");*/
+			break;
+		case 4:
+			myargv.push_back(argv[0]);
+			myargv.push_back("Z:/Documents/tmp/TSPLIB-SOP/ESC07.sop");
+			myargv.push_back("--noP");
+			myargv.push_back("--UB");
+			myargv.push_back("2125");
+			break;
+		case 5:
+			myargv.push_back(argv[0]);
+			myargv.push_back("Z:/Documents/tmp/TSPLIB-SOP/rbg109a.sop");
+			//myargv.push_back("--noP");
+			myargv.push_back("--UB");
+			myargv.push_back("1038");
+			break;
+		default: 
+			std::cerr << "ERROR: Requested unknown debugRun no. "<<debugRun<<"\n. Terminating.\n";
+			exit(EXIT_FAILURE);
+		}
+		myargc = myargv.size(); //set the correct argCount for later use
 	}
+	else //ain't a debug run
+		std::cerr << "This is not a drill.\n";
 
 	//=========PARSE===COMMAND===LINE==&==EXECUTE===================/
 	//fail if input file name is not specified or there are too many arguments (not combining -H $breadth and --UB $bound yet)

@@ -57,18 +57,21 @@ struct t_slnRequestState
 	//std::pair<e_parState, mock_t_LB> LB_alg; //lower bound algorithm; default to elCheapo; if no upper bound given, don't do DP, just compute the LB
 };
 
-//checks if key -K --KK is present in inp, and returns its value (next line)
+/*checks if key -K --KK is present in inp, and returns its value (next argument)
+knows which keys are unary (just --noP) and which are binary (everybody else)*/
 auto keyFound(const std::string key, const t_lines& iargs)
 {//TODO: revamp through find_if &c; it's just a filter, except the position also counts
-	int argCt = 1; //iargv[0] = executable name; iargv[1] = input file name, always;
-	while (argCt < iargs.size() && iargs.at(argCt) != key)
-		argCt++;
-	if (argCt < iargs.size()-1 || //key found and it could have a value
-		(argCt == iargs.size() - 1 && iargs.at(argCt) == "--noP") ) //unary key found
-		return std::make_pair(iargs.at(argCt), true);
-	else if (argCt == iargs.size() - 1 )
+	int argNo = 1; //iargv[0] = executable name; iargv[1] = input file name, always;
+	bool keyIsBinary = (key != "--noP") ? (true) : (false); //all keys are binary expect "--noP"
+	while (argNo < iargs.size() && iargs.at(argNo) != key)
+		argNo++;
+	if (argNo < iargs.size()-1 && keyIsBinary)  // binary key found and it could have a value
+		return std::make_pair(iargs.at(argNo+1), true); //key's at(argNo), its VALUE is at(argNo+1)
+	else if (argNo <= iargs.size() - 1 && !keyIsBinary ) //unary key found
+		return std::make_pair("unary key "+ key +" found", true);//value is irrelevant, return (keyName, true)
+	else if (argNo == iargs.size() - 1 && keyIsBinary) // if the key was binary but ended dangling
 		return std::make_pair("ERROR: key " + key + " has no value", false);
-	else  //argCt==pos, key not found
+	else  //argNo==iargs.size(), key not found
 		return std::make_pair("key " + key + " not found", false);
 }
 //check if a string is made entirely of digits; from StackOverflow::charles-salvia
