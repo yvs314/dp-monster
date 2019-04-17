@@ -40,8 +40,8 @@ DO NOT COMBINE -H  and --UB yet; right now, --UB is silently given priority
 
 int main(int argc, char* argv[])
 {
-	//int debugRun = 0;
-	int debugRun = 3;
+	int debugRun = 0;
+	//int debugRun = 3;
 	int myargc = argc; 
 	t_lines myargv = args2lines(argc,argv);
 	
