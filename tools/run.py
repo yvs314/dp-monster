@@ -21,9 +21,9 @@ if __name__ == "__main__":
 
     subtasks = tasks[args.partition]
 
-    data_dir = join_path("..", "data", "TSPLIB")
+    data_dir = os.path.abspath(join_path("..", "data", "TSPLIB"))
     base_out_dir = join_path("..", "results") if args.out_dir is None else args.out_dir
-    executable = join_path("..", "build", "dpm" + (".exe" if os.name == "nt" else ""))
+    executable = os.path.abspath(join_path("..", "build", "dpm" + (".exe" if os.name == "nt" else "")))
     assert isfile(executable), "Executable file doesn't exist"
 
     proc = []
@@ -33,8 +33,8 @@ if __name__ == "__main__":
         suffix = "-TSP-BWD-DP"
         for i in range(1, args.nruns+1):
             out_dir = join_path(base_out_dir, "run%s" % (i))
-            executable_ = join_path('..', executable)
-            data_filename_ = join_path('..', data_filename)
+            executable_ = os.path.relpath(executable, out_dir)
+            data_filename_ = os.path.relpath(data_filename, out_dir)
             os.makedirs(out_dir, exist_ok=True)
 
             log_filename = join_path(out_dir, "%s%s.log" % (task, suffix))
