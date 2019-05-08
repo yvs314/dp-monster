@@ -12,17 +12,17 @@ tasks = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DPM project runner')
-    parser.add_argument('--task', '-t', type=str, choices=list(tasks.keys()), required=True, help='Select subtasks for solving')
-    parser.add_argument('--slurm', '-s', type=bool, help='Use slurm or not')
+    parser.add_argument('--partition', '-p', type=str, choices=list(tasks.keys()), required=True, help='Select partition of tasks for solving')
+    parser.add_argument('--slurm', '-s', action='store_true', help='Use slurm or not')
     parser.add_argument('--out_dir', '-o', type=str, default=None,  help='Output directory. If not specified, ../results are used.')
-    parser.add_argument('--force', '-f', action='store_true',  help='Force run')
+    parser.add_argument('--force', '-f', action='store_true', help='Force run')
+    parser.add_argument('--nruns', '-n', type=int, default=5, help='Number of runs')
     args = parser.parse_args()
 
-    subtasks = tasks[args.task]
+    subtasks = tasks[args.partition]
 
     data_dir = join_path("..", "data", "TSPLIB")
-    out_dir = join_path("..", "results") if args.out_dir is None else args.out_dir
-    os.makedirs(out_dir, exist_ok=True)
+    base_out_dir = join_path("..", "results") if args.out_dir is None else args.out_dir
     executable = join_path("..", "build", "dpm" + (".exe" if os.name == "nt" else ""))
     assert isfile(executable), "Executable file doesn't exist"
 
@@ -30,13 +30,19 @@ if __name__ == "__main__":
         data_filename = join_path(data_dir, task)
         assert isfile(data_filename), "Data file doesn't exists"
         suffix = "sop-TSP-BWD-DP"
-        log_filename = join_path(out_dir, "%s.%s.log" % (task[:-4], suffix))
-        dump_filename = join_path(out_dir, "%s.%s.dump" % (task[:-4], suffix))
+        for i in range(1, args.nruns+1):
+            out_dir = join_path(base_out_dir, "run%s" % (i))
+            executable_ = join_path('..', executable)
+            data_filename_ = join_path('..', data_filename)
+            os.makedirs(out_dir, exist_ok=True)
 
-        if args.force or (not isfile(log_filename) and not isfile(dump_filename)):
-            if args.slurm:
-                raise NotImplementedError()
+            log_filename = join_path(out_dir, "%s.%s.log" % (task[:-4], suffix))
+            dump_filename = join_path(out_dir, "%s.%s.dump" % (task[:-4], suffix))
+
+            if args.force or (not isfile(log_filename) and not isfile(dump_filename)):
+                if args.slurm:
+                    raise NotImplementedError()
+                else:
+                    subprocess.run("%s %s" % (executable_, data_filename_), shell=True, check=True, cwd=out_dir)
             else:
-                subprocess.run("%s %s" % (executable, data_filename), shell=True, check=True, cwd=out_dir)
-        else:
-            print("Task %s already computed" % task)
+                print("Task %s for %s run already computed" % (task, i))
