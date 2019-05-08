@@ -19,6 +19,7 @@ reading TSPLIB-SOP is included; might later separate into a namespace/other modu
 #include<fstream>
 #include<deque>
 #include<string>
+#include<functional> // for t_costBinOp
 
 //strings in the container are thought to be separated by NEWLINE;
 using t_lines = std::deque<std::string>;
@@ -52,9 +53,22 @@ const t_cost MINF = std::numeric_limits<t_cost>::min();
 using t_cstMx = std::vector < std::vector<t_cost> >;
 
 //=========PREPROCESSING==================================/
+//CAVEAT: not compatible with GTSPs yet
+
+//any function on costs; with constant references to match std::max
+using t_costBinOp = std::function<t_cost (const t_cost&, const t_cost&)>;
+
+t_cstMx cwiseBinOp(const t_cstMx& L, const t_cstMx& R, const t_costBinOp f);
+
+//dual to ordVec2bin
+std::vector<t_cost> bin2ordVec(const t_bin& input, const ptag dim);
+
+//this one writes (-1) instead of 1's---for preprocessing
+std::vector<t_cost> bin2ordVec_(const t_bin& input, const ptag dim);
+
 t_cstMx mkEmpty_cstMx(const ptag size);
 
-t_cstMx to_cstMx(const t_vprecDsc input);
+t_cstMx to_cstMx(const t_vprecDsc& input);
 
 inline t_cost infiny(const t_cost input)
 {
@@ -63,7 +77,7 @@ inline t_cost infiny(const t_cost input)
 
 t_cstMx mapInfMx(const t_cstMx& input);
 
-t_cstMx getPrepCstMx(const t_cstMx& input);//transitive arcs are INF
+t_cstMx getPrepCstMx(const t_cstMx& input);//transitive arcs are INF, dual arcs are INF
 //----------------------------------------------------------/
 
 //read the input as a row of t_cost; ASSUMPTION: only t_cost values on the line
@@ -88,8 +102,7 @@ t_cstMx unifyMx(const t_cstMx& input);
 //read a matrix' row as a standard bitset, t_bin
 t_bin ordVec2bin(const std::vector<t_cost>& input);
 
-//dual to ordVec2bin
-std::vector<t_cost> bin2ordVec(const t_bin& input, const ptag dim);
+
 
 //from TSPLIB-SOP cost matrix, read the precedence data
 //cost[i][j]==-1 means i>j (transitive)--- a PREDECESSORS matrix

@@ -15,11 +15,40 @@ reading TSPLIB-SOP is included; might later separate into a namespace/other modu
 //#include"prec-ord.h"
 #include"reader-base.h"
 
+#include<algorithm> // for std::max
 
 //===========PREPROCESS========================/
 
+t_cstMx cwiseBinOp(const t_cstMx& L, const t_cstMx& R, const t_costBinOp f)
+{
+	auto out = L;
+	for (auto row = 0; row < L.size(); row++) 
+		for (auto col = 0; col < L[row].size(); col++)
+			out[row][col] = f(L[row][col], R[row][col]);
+	return out;
+}
+
+//this one is verbatim, 0 --> 0; 1--> 1
+std::vector<t_cost> bin2ordVec(const t_bin& input, const ptag dim)//dim
+{
+	auto out = std::vector<t_cost>(dim + 2, 0); //start with a 0-filled vector 0..dim+1
+	for (auto i=0; i< out.size(); i++)
+		out[i] = input.test(i);//directly copy its contents (less efficient than through foreach_elt)
+	return out;
+}
+
+//this one writes (-1) instead of 1's---for preprocessing
+std::vector<t_cost> bin2ordVec_(const t_bin& input, const ptag dim)//dim
+{
+	auto out = std::vector<t_cost>(dim + 2, 0); //start with a 0-filled vector 0..dim+1
+	for (auto i = 0; i < out.size(); i++)
+		out[i] = (-1) * input.test(i);//directly copy its contents (less efficient than through foreach_elt)
+	return out;
+}
+
 /* make a cstMx 0..size+1 \times 0..size+1, filled with zeroes
-and (-1)s at prohibited moves (any, 0), and also INF at (0,size+1) */
+and (-1)s at prohibited moves (any, 0), and also INF at (0,size+1) 
+ */
 t_cstMx mkEmpty_cstMx(const ptag dim)
 {
 	//zero-filled 0..size+1 \times 0..size+1 matrix; relies on 0 being a feasible t_cost
@@ -34,11 +63,17 @@ t_cstMx mkEmpty_cstMx(const ptag dim)
 put all (-1) matching given t_vprecDsc for proper cities (not 0, not term=n+1)
 */
 t_cstMx to_cstMx(const t_vprecDsc& input) //"putPrec, a dual to getPrec"
+//CAVEAT:not compatible with GTSP. TODO: add optional city-to-cluster mapping
 {
 	auto out = mkEmpty_cstMx(input.size()-2); //default precs also work with all of it
 	//(i,j)=-1 means can't go i-->j because i <_P j; thus, just take i.receives_from
 	for (auto row = 1; row < input.size() - 1; row++) //for all rows 1 .. dim
-		out[row] = bin2ordVec(input[row].receives_from,input.size()-2);
+	{
+		//out[row] = bin2ordVec(input[row].receives_from, input.size() - 2); // --- WRONG
+		out[row] = bin2ordVec_(input[row].sends_to, input.size() - 2);
+		out[row][0] = -1; //write NOGO to 0 just in case
+	}
+
 	return out;
 }
 
@@ -57,14 +92,21 @@ t_cstMx mapInfMx(const t_cstMx& input)
 //auxiliary: test if t_vprecDsc's principal ideal and principal filter representations match
 //TODO: cut preprocessing out, make a separate prep.h/ord-rel.h, dependent on prec-ord.h and reader-base.h (for t_cstMx)
 
-/*return a preprocessed cost matrix: all transitive arcs are INF
+/*given a “raw” TSPLIB-like cost matrix, 
+return a preprocessed cost matrix: all transitive arcs are INF, all dual arcs are INF
 WARNING: assumes _transitive_ precedence constraints as input in t_cstMx*/
 t_cstMx getPrepCstMx(const t_cstMx& input)
 {
-	auto out = input;
-	auto P = getPrec(input); //get the precedence constraints
-	auto Psquare = compose(P, P);//these are the _transitive_ edges (not part of trans.reduction)
-//STOPGAP, to be implemented	
+	
+	auto P = getPrec(input); //get the precedence constraints as t_vprecDsc
+	auto Psquare = compose(P, P);//find the _transitive_ edges (not part of trans.reduction) as t_vprecDsc
+	//replace (-1) with INF: kill the transitive edges
+	auto zat = mapInfMx(to_cstMx(Psquare));
+	//replace (-1) with INF: kill the dual relation
+	auto out = mapInfMx(input);
+	//make sure INFs at _trans.edges_ propagate to the cost matrix
+	out = cwiseBinOp(out, zat, [](const t_cost& l, const t_cost&r) {return std::max(l, r); });
+		
 	return out;
 }
 
@@ -174,12 +216,7 @@ t_bin ordVec2bin(const std::vector<t_cost>& input)
 	return out;
 }
 
-std::vector<t_cost> bin2ordVec(const t_bin& input, const ptag dim)//dim
-{
-	auto out = std::vector<t_cost>(dim+2,0); //start with a 0-filled vector 0..dim+1
-	for (auto i : out)	out[i] = input[i];//directly copy its contents (less efficient than through foreach_elt)
-	return out;
-}
+
 
 //from TSPLIB-SOP cost matrix, read the precedence data
 //cost[i][j]==-1 means i>j (transitive)--- a PREDECESSORS matrix

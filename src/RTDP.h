@@ -144,7 +144,7 @@ struct t_DP
 		 //measure the current memory usage and record that;
 		slnMem.emplace_back(t_memRec(baselineMem));
 	}//----------DONE----CONSTRUCTION-&---SOLUTION--PRIMING---------/
-	/*delegate constructor: it ìknowsî its own SLNCODE function; 
+	/*delegate constructor: it ‚Äúknows‚Äù its own SLNCODE function; 
 	necessary only for this---base---class*/
 	t_DP(const t_Instance& iproblem, const t_Direction iDIR)
 		: t_DP(iproblem, iDIR, mk_DP_Code(iDIR)){};
@@ -241,7 +241,7 @@ struct t_DP
 		slnLog << "\n" << "BF DONE: " << mkTimeStamp(bfEndTime_t) << "\n" <<
 			"TOTAL DURATION: "
 			<< mkMsecDurationFull(slnTime._rel_time(0, p.dim)) << "\n"
-			<< "TOTAL DURATION IN SECONDS "
+			<< "TOTAL DURATION IN SECONDS: "
 			<< mkMsecDurationBrief(slnTime._rel_time(0, p.dim)) << "\n"
 			<< "\n" << "RAM USAGE AT LAST LAYER: " << to_stringBytes(slnMem.back().physMem) 
 			<< "\n" << "VM USAGE AT LAST LAYER: " << to_stringBytes(slnMem.back().virtMem)
@@ -423,7 +423,7 @@ struct t_hRtDP : public t_DP
 		slnLog << "\n" << "BF DONE: " << mkTimeStamp(bfEndTime_t) << "\n" <<
 			"TOTAL DURATION: "
 			<< mkMsecDurationFull(slnTime._rel_time(0, p.dim)) << "\n"
-			<< "TOTAL DURATION IN SECONDS "
+			<< "TOTAL DURATION IN SECONDS: "
 			<< mkMsecDurationBrief(slnTime._rel_time(0, p.dim)) << "\n"
 			<< "\n" << "RAM USAGE AT LAST LAYER: " << to_stringBytes(slnMem.back().physMem)
 			<< "\n" << "VM USAGE AT LAST LAYER: " << to_stringBytes(slnMem.back().virtMem);

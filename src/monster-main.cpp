@@ -19,7 +19,7 @@ A third update of the original **2011 solver**'s 2016 modular rewrite.
 //tmp-debug:
 #include"lower-bound.h"
 
-const std::string usage = " filename.sop [-H breadth] [-d FWD | BWD] [-t TSP | BTSP | TD_TSPb | etc] [--UB upper_bound]";
+const std::string usage = " filename.sop [--noP] [-H breadth] [-d FWD | BWD] [-t TSP | BTSP | TD_TSPb | etc] [--UB upper_bound]";
 
 
 /* wat.exe $name.sop -H $breadth
@@ -27,53 +27,64 @@ const std::string usage = " filename.sop [-H breadth] [-d FWD | BWD] [-t TSP | B
 solve it by RT-DP with at most $breadth arguments
 exit if refdim is less than the problem's size
 NB!: refdim must be set in the code, i.e, makefile-build if I ever get to automate it
+--noP : disable preprocessing (default: do preprocessing, i.e., set costs of transitive and dual edges to INF)
 -H breadth: 1..inf, if absent then exact DP
 -d FWD | BWD, if absent default to BWD, if erroneous, terminate
 -t TSP | BTSP | TD_TSPb | TD_TSPf | GTSP | BGTSP, if absent default to TSP, if erroneous, terminate
 also, test if requested type matches direction: (*b <-> BWD), (*f <-> FWD)
 --UB 0 | 1 | ... given upper bound, to use with DPBB; "long" option
-
+DO NOT COMBINE -H  and --UB yet; right now, --UB is silently given priority
 */
 //
 
 
 int main(int argc, char* argv[])
 {
-//	bool exactRequested = false;
-	//bool debugRun = true;
 	int debugRun = 0;
-	//int debugRun = 2;
+	//int debugRun = 4;
 	int myargc = argc; 
 	t_lines myargv = args2lines(argc,argv);
 	
-	switch (debugRun)
+	if (debugRun > 0)
 	{
-	case 1:	
-		std::cerr << "Requested debug run no."<<debugRun<<"\n";
-		myargc = 4;
-		myargv.resize(myargc);
-		myargv[0] = argv[0];
-		myargv[1] = "ESC07.sop";//"br17.12.sop";//"p43.4.sop";//"ry48p.4.sop";//"toy05.sop";
-		myargv[2] = "-d";
-		myargv[3] = "FWD";
-		break;
-	case 2:
 		std::cerr << "Requested debug run no." << debugRun << "\n";
-		myargc = 6;
-		myargv.resize(myargc);
-		myargv[0] = argv[0];
-		myargv[1] = "ESC07.sop";//"br17.12.sop";//"p43.4.sop";//"ry48p.4.sop";//"toy05.sop";
-		myargv[2] = "-d";
-		myargv[3] = "FWD";
-		myargv[4] = "--UB";
-		myargv[5] = "3000";
-		break;
-	default: std::cerr << "This is not a drill.\n";
+		myargv.clear();
+
+		switch (debugRun)
+		{
+		case 3:
+			myargv.push_back(argv[0]);
+			myargv.push_back("ESC07.sop");
+			myargv.push_back("--noP");
+			/*myargv.push_back("-d");
+			myargv.push_back("FWD");*/
+			break;
+		case 4:
+			myargv.push_back(argv[0]);
+			myargv.push_back("Z:/Documents/tmp/TSPLIB-SOP/ESC07.sop");
+			myargv.push_back("--noP");
+			myargv.push_back("--UB");
+			myargv.push_back("2125");
+			break;
+		case 5:
+			myargv.push_back(argv[0]);
+			myargv.push_back("Z:/Documents/tmp/TSPLIB-SOP/rbg109a.sop");
+			//myargv.push_back("--noP");
+			myargv.push_back("--UB");
+			myargv.push_back("1038");
+			break;
+		default: 
+			std::cerr << "ERROR: Requested unknown debugRun no. "<<debugRun<<"\n. Terminating.\n";
+			exit(EXIT_FAILURE);
+		}
+		myargc = myargv.size(); //set the correct argCount for later use
 	}
+	else //ain't a debug run
+		std::cerr << "This is not a drill.\n";
 
 	//=========PARSE===COMMAND===LINE==&==EXECUTE===================/
-	//fail if input file name is not specified or there are too many arguments (not combining -H $breadht and --UB $bound yet)
-	if (myargc>8 || myargc==1) { std::cerr << myargv[0] << usage; exit(EXIT_FAILURE); }
+	//fail if input file name is not specified or there are too many arguments (not combining -H $breadth and --UB $bound yet)
+	if (myargc>9 || myargc==1) { std::cerr << myargv[0] << usage; exit(EXIT_FAILURE); }
 	
 	std::string ifName = myargv[1];
 	std::ifstream fin;
@@ -98,39 +109,60 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 	
+	//==Instance=with=preprocessing--rm-trans====
+	t_Instance testInstP = t_Instance(
+		getDesc(input)
+		, getName(input)
+		, request.Type.second
+		, getPrepCstMx(getCstMx(input)) //cost matrix is _preprocessed_: dual and transitive are removed
+		, getPrec(getCstMx(input)));
+	//std::exit(EXIT_SUCCESS); //dangerous!
+	
+ //BACKUP: no preprocessing; e.g. for GTSP; might adapt later
 	t_Instance testInst = t_Instance(
 		getDesc(input)
 		, getName(input)
 		, request.Type.second 
 		, getCstMx(input) //to be replaced with preprocess.getCstMx input
 		, getPrec(getCstMx(input)));
+	
+	t_Instance theInstance = (request.noP.second == true) //if --noP key is set
+		? (testInst)//ABANDON preprocessing
+		: (testInstP);//if not, then DO preprocessing
+
+	if (request.noP.second == false) //if --noP key was NOT set, say we're doing it!
+		std::cerr << "\n Preprocessing engaged.\n";
+
 	//TMP===DEBUG-LB==BLK
 	//{//it's such a dirty hack, but it works; run a.out WAT.sop > WAT.sop.dump.lb
-	//	auto lb = elCheapoLB(0, testInst.wkOrd.omask, testInst, FWD);
-	//	std::cout<<"VALUE:"<<lb.first<<"\n\n"<<"SOLUTION:vertexFrom;vertexTo;arcCost\n"<<dumpArcs(lb.second);
+	//	auto lbP = elCheapoLB(0, testInst.wkOrd.omask, testInstP, FWD); // with preprocessing & INFs
+	//	auto lb = elCheapoLB(0, testInst.wkOrd.omask, testInst, FWD); // without that
+	//	std::cout << "\nVALUE-P;VALUE-NO-P:" << lbP.first << ";" << lb.first
+	//		<< "\n\n" << "SOLUTION-P:vertexFrom;vertexTo;arcCost\n" << dumpArcs(lbP.second)
+	//		<< "\n\n" << "SOLUTION-NO-P:vertexFrom;vertexTo;arcCost\n" << dumpArcs(lb.second) << "\n\n";
 	//	return 0;
 	//}
 	//-------------------/
 
 	//first try DP-BB; would consider restricted DP-BB m*u*c*h later
 	if (request.UB.first==e_parState::present)
-	{
-		t_BBDP testSln(testInst, request.D.second, request.UB.second, "CHP");
+	{//note testInstP, with P for Preprocessing (transitive edges removed through cost=INF)
+		t_BBDP testSln(theInstance, request.D.second, request.UB.second, "CHP");
 		std::cerr << "Requested dynamic programming with branch and bound, UB=" << request.UB.second
-			<< "\nDirection:" << getDirectionCode(request.D.second) << "\n";
+			<< "\nDirection:" << getDirectionCode(request.D.second) << "\n"; 
 		testSln.solve();
 	}
 	//if breadth was specified (not zero)
 	else if (request.B.first==e_parState::present)
 	{
-		t_hRtDP testSln(testInst, request.D.second, request.B.second);
+		t_hRtDP testSln(theInstance, request.D.second, request.B.second);
 		std::cerr << "Requested heuristic: hRtDP, breadth=" << request.B.second
 			<< "\nDirection:" <<getDirectionCode(request.D.second) <<"\n";
 		testSln.solve();
 	}
 	else//breadth was not specified: exact DP requested
 	{
-		t_DP testSln(testInst, request.D.second);
+		t_DP testSln(theInstance, request.D.second);
 		std::cerr << "Requested exact dynamic programming" << "\nDirection:" << getDirectionCode(request.D.second) << "\n"; 
 		testSln.solve();
 	}
@@ -142,7 +174,28 @@ int main(int argc, char* argv[])
 }
 //------------------------------------/
 //======BIT========BUCKET=============/
-	//if (debugRun==1)
+//{//it's such a dirty hack, but it works; run a.out WAT.sop > WAT.sop.dump.lb
+	//	auto lb = elCheapoLB(0, testInst.wkOrd.omask, testInst, FWD);
+	//	std::cout<<"VALUE:"<<lb.first<<"\n\n"<<"SOLUTION:vertexFrom;vertexTo;arcCost\n"<<dumpArcs(lb.second);
+	//	return 0;
+	//}	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//if (debugRun==1)
 	//{
 	//	/*myargc = 2;
 	//	myargv[0] = argv[0];
