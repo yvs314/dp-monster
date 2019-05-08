@@ -26,6 +26,7 @@ if __name__ == "__main__":
     executable = join_path("..", "build", "dpm" + (".exe" if os.name == "nt" else ""))
     assert isfile(executable), "Executable file doesn't exist"
 
+    proc = []
     for task in subtasks:
         data_filename = join_path(data_dir, task)
         assert isfile(data_filename), "Data file doesn't exists"
@@ -39,10 +40,18 @@ if __name__ == "__main__":
             log_filename = join_path(out_dir, "%s%s.log" % (task, suffix))
             dump_filename = join_path(out_dir, "%s%s.dump" % (task, suffix))
 
+            command = "%s %s" % (executable_, data_filename_)
             if args.force or (not isfile(log_filename) and not isfile(dump_filename)):
                 if args.slurm:
                     raise NotImplementedError()
+                    command = "srun -t 20:0:0 --mem=251G %s" % command
+                    command = list(filter(len, command.split(' '))) + [file_name]
+                    proc.append(subprocess.Popen(command, stdout=subprocess.PIPE))
                 else:
-                    subprocess.run("%s %s" % (executable_, data_filename_), shell=True, check=True, cwd=out_dir)
+                    subprocess.run(command, shell=True, check=True, cwd=out_dir)
             else:
                 print("Task %s for %s run already computed" % (task, i))
+
+    # wait subprocess we run with slurm
+    for p in proc:
+        p.wait()
