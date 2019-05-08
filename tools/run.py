@@ -29,15 +29,15 @@ if __name__ == "__main__":
     for task in subtasks:
         data_filename = join_path(data_dir, task)
         assert isfile(data_filename), "Data file doesn't exists"
-        suffix = "sop-TSP-BWD-DP"
+        suffix = "-TSP-BWD-DP"
         for i in range(1, args.nruns+1):
             out_dir = join_path(base_out_dir, "run%s" % (i))
             executable_ = join_path('..', executable)
             data_filename_ = join_path('..', data_filename)
             os.makedirs(out_dir, exist_ok=True)
 
-            log_filename = join_path(out_dir, "%s.%s.log" % (task[:-4], suffix))
-            dump_filename = join_path(out_dir, "%s.%s.dump" % (task[:-4], suffix))
+            log_filename = join_path(out_dir, "%s%s.log" % (task, suffix))
+            dump_filename = join_path(out_dir, "%s%s.dump" % (task, suffix))
 
             if args.force or (not isfile(log_filename) and not isfile(dump_filename)):
                 if args.slurm:
