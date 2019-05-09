@@ -1,2 +1,2 @@
 echo "$PWD/.."
-docker run -it -v $PWD/..:/work dp-monster
+docker run -it -v $PWD/..:/work dpm

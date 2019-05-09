@@ -4,7 +4,8 @@ MAINTAINER Andrey Sheka <andrey.sheka@gmail.com>
 RUN apt-get update && \
     apt-get install -y \
     cmake \
-    clang && \
+    clang \
+    python3 && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 

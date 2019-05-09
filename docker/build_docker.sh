@@ -1,1 +1,1 @@
-docker build . -t dp-monster
+docker build . -t dpm
