@@ -2,20 +2,22 @@
 Dynamic programming and derived solvers, mostly for TSP with precedence constraints. 
 
 #### Some abbreviations
-* DP::= dynamic programming (kudos to Bellman, Held, and Karp)
-* DPBB::= DP with branch-and-bound scheme, also “bounded DP” (kudos to Morin and Marsten)
+* DP::= dynamic programming (kudos to Bellman, Held, and Karp); PCs treated derived in (Salii, 2019) from (Lawler, 1979) and (Chentsov, Chentsov, 2004)
+* DPBB::= DP hybridized with Branch-and-Bound scheme, also “bounded DP” (kudos to Morin and Marsten)
 * hRtDP:: restricted DP, a heuristic (kudos to Malandraki and Dial)
 ---
 * TSP-PC::= Traveling Salesman Problem with Precedence Constraints
 * SOP::= Sequential Ordering Problem (same as TSP-PC)
 * BTSP:: Bottleneck TSP, with `minmax` objective function, instead of `minsum` as in ordinary TSP
+* PCs::= Precedence Constraints
+* UB::= Upper Bound
 
 
 
 
 
 ## C++ core's interface
-Say its executable is `dpm`.
+Say its executable is `dpm`
 ```
 $dpm
 usage: dpm filename.sop [--noP] [-H breadth] [-d FWD | BWD] [-t TSP | BTSP | TD_TSPb | etc] [--UB upper_bound]
@@ -30,8 +32,25 @@ Basically, it works like this:
     * When it's done, dump the solution into the `.dump` file, in particular, a line `VALUE:XXXX`. 
        * Special case for DPBB: there may be _no_ solution, but there will be a `.dump` with a line `DPBB_ALL_STATES_FATHOMED: impossible to get better than UB=XXXX`
 
-
 ### Naming conventions
+A _solution_ is characterized by
+* INP::= input file name, first argument of `dpm`
+* DRN::= solution direction `-d`
+   * FWD:: forward (default), like Held and Karp's DP (Held, Karp, 1962)
+   * BWD:: backward, like Bellman's DP (Bellman, 1962)
+* TYPE::= problem type `-t`
+   * TSP::= _sum_ travel cost aggregation, TSP-PC
+   * BTSP::= _max_ travel cost aggregation, BTSP-PC
+* MTH::= solution method code
+   * DP::= _exact_ DP 
+   * hRtDP::= _heuristic_ Restricted DP
+      * H::= the sole parameter of hRtDP, a _natural number_ `-H XXXX`
+   * DPBB::= _exact_ Bounded DP
+      * UB::= 1st parameter of DPBB, a known upper bound on _solution value_ `--UB XXXX`
+      * LB::= 2nd parameter of DPBB, a code of _method_ used to obtain the _lower bound_ 
+         * CHP::= “el Cheapo,” a very dumb graph-based lower bound; used by default, FWD-only
+     
+
 
 ## Caveats
 * input file name can't have (unescaped) spaces
