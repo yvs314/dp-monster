@@ -30,7 +30,7 @@ if __name__ == "__main__":
     for task in subtasks:
         data_filename = join_path(data_dir, task)
         assert isfile(data_filename), "Data file doesn't exists"
-        suffix = "-TSP-BWD-DP"
+        suffix = "-TSP-FWD-DP"
         for i in range(1, args.nruns+1):
             out_dir = join_path(base_out_dir, "run%s" % (i))
             executable_ = os.path.relpath(executable, out_dir)
