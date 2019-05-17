@@ -52,4 +52,4 @@ if __name__ == "__main__":
     if args.type == "xlsx":
         df.to_excel(out_file_name, index=False)
     if args.type == "csv":
-        df.to_csv(out_file_name, index=False)
+        df.to_csv(out_file_name, index=False, sep=';')
