@@ -12,14 +12,20 @@ tasks = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DPM project runner')
-    parser.add_argument('--partition', '-p', type=str, choices=list(tasks.keys()), required=True, help='Select partition of tasks for solving')
+    tasks_params = parser.add_mutually_exclusive_group(required=True)
+    tasks_params.add_argument('--group', '-g', type=str, choices=list(tasks.keys()), help='Select group of tasks for solving')
+    tasks_params.add_argument('--task', '-t', type=str, choices=list(tasks["all"]), help='Select task for solving')
+    parser.add_argument('--param', '-p', default="", help='Parameters for child dpm module spitted by comma', type=lambda s: str(s).split(','))
     parser.add_argument('--slurm', '-s', action='store_true', help='Use slurm or not')
     parser.add_argument('--out_dir', '-o', type=str, default=None,  help='Output directory. If not specified, ../results are used.')
     parser.add_argument('--force', '-f', action='store_true', help='Force run')
     parser.add_argument('--nruns', '-n', type=int, default=5, help='Number of runs')
     args = parser.parse_args()
 
-    subtasks = tasks[args.partition]
+    if args.group is not  None:
+        subtasks = tasks[args.group]
+    else:
+        subtasks = [args.task]
 
     data_dir = os.path.abspath(join_path("..", "data", "TSPLIB"))
     base_out_dir = join_path("..", "results") if args.out_dir is None else args.out_dir
@@ -30,27 +36,24 @@ if __name__ == "__main__":
     for task in subtasks:
         data_filename = join_path(data_dir, task)
         assert isfile(data_filename), "Data file doesn't exists"
-        suffix = "-TSP-FWD-DP"
         for i in range(1, args.nruns+1):
             out_dir = join_path(base_out_dir, "run%s" % (i))
             executable_ = os.path.relpath(executable, out_dir)
             data_filename_ = os.path.relpath(data_filename, out_dir)
             os.makedirs(out_dir, exist_ok=True)
 
-            log_filename = join_path(out_dir, "%s%s.log" % (task, suffix))
-            dump_filename = join_path(out_dir, "%s%s.dump" % (task, suffix))
-
             command = "%s %s" % (executable_, data_filename_)
-            if args.force or (not isfile(log_filename) and not isfile(dump_filename)):
-                if args.slurm:
-                    raise NotImplementedError()
-                    command = "srun -t 20:0:0 --mem=251G %s" % command
-                    command = list(filter(len, command.split(' '))) + [file_name]
-                    proc.append(subprocess.Popen(command, stdout=subprocess.PIPE))
-                else:
-                    subprocess.run(command, shell=True, check=True, cwd=out_dir)
+            if args.force:
+                command += " -f"
+            command += " " + " ".join(args.param)
+
+            print("Run DPM module with command: %s" % command)
+            if args.slurm:
+                command = "srun -t 20:0:0 --mem=251G %s" % command
+                command = list(filter(len, command.split(' '))) + [file_name]
+                proc.append(subprocess.Popen(command, stdout=subprocess.PIPE))
             else:
-                print("Task %s for %s run already computed" % (task, i))
+                subprocess.run(command, shell=True, check=True, cwd=out_dir)
 
     # wait subprocess we run with slurm
     for p in proc:
