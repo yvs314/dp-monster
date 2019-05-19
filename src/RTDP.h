@@ -160,11 +160,11 @@ struct t_DP
 			//for each (exit) point of the expanding city
 			foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
 			{
-
+#pragma omp critical(costwrite)
 				//find its cost in view of prevL through (BF) and put K->x->cost
 				thisL[K].emplace(x, minmin(x, K, prevL, p, D));
 			}//next (exit) x from the city m 
-
+#pragma omp critical(statewrite)
 			//expand the next layer
 			nextL[K | (BIT0 << m)].clear();
 		}//next expanding city m\in EK
@@ -178,24 +178,31 @@ struct t_DP
 		{
 			//for each task set (ideal/filter) of cardinality l
 			size_t nStates = 0;//to count the states at this layer
+//=================OMP=========TASKS====================/
+#pragma omp parallel default (shared)
+#pragma omp single nowait
 			for (auto ts : layer[l])//implemented as ts.first; .second is for the states
 			{
 				/*recall: FWD:coMin, BWD:coMax
 				t_bin fexp = D.gE(ts.first, p.ord, p.wkOrd);*/
 				//compute (BF) for all (x,K): x\in fexp, K=ts.first; 
-
-				compExpandBF(ts.first
+#pragma omp task untied firstprivate(ts)
+				{
+					compExpandBF(ts.first
 							, D.gE(ts.first, p.ord, p.wkOrd)
 							, layer[l - 1]
 							, layer[l]
 							, layer[l + 1]);
-				nStates += layer[l][ts.first].size();//count the states associated with ts.first
+					nStates += layer[l][ts.first].size();//count the states associated with ts.first
+				}
 			}//next task set (filter)
+#pragma omp taskwait
+//-----------OMP-------------TASKS-------DONE-----------/
+#pragma omp master
 
 			//all current-layer states' values computed; all current-layer tasksets expanded.
-			nStatesTotal += nStates;//add this layer's state count to the total
 			{
-
+				nStatesTotal += nStates;//add this layer's state count to the total
 				slnTime.vlayerDone[l] = myClock::now();//get the current time
 				//measure current memory use /w respect to last recorded
 				auto memUse = t_memRec();
@@ -207,6 +214,7 @@ struct t_DP
 					layer[l].size(), t_stateDesc(), t_stateDesc(), memUse, nStates) << "\n";
 				slnLog.close();
 			}
+#pragma omp barrier
 		}//next layer
 		
 		//done the ordinary layers; proceed to the complete problem BWD:(0,\rg{1}{dim})/FWD:(\trm,\rg{1}{dim})
