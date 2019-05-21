@@ -20,6 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_dir', '-o', type=str, default=None,  help='Output directory. If not specified, ../results are used.')
     parser.add_argument('--force', '-f', action='store_true', help='Force run')
     parser.add_argument('--nruns', '-n', type=int, default=5, help='Number of runs')
+    parser.add_argument('--prefix', type=str, default="", help='Prefix for run directories')
     args = parser.parse_args()
 
     if args.group is not  None:
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         data_filename = join_path(data_dir, task)
         assert isfile(data_filename), "Data file doesn't exists"
         for i in range(1, args.nruns+1):
-            out_dir = join_path(base_out_dir, "run%s" % (i))
+            out_dir = join_path(base_out_dir, "%srun%s" % (args.prefix, i))
             executable_ = os.path.relpath(executable, out_dir)
             data_filename_ = os.path.relpath(data_filename, out_dir)
             os.makedirs(out_dir, exist_ok=True)
