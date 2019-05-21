@@ -56,24 +56,30 @@ struct t_BBDP : public t_DP
 		size_t nFathSt = 0;
 		foreach_elt(m, EK, p.dim)//for each expanding city
 		{
-			bool canExpandWith_m = false;//default to ``can't expand:over budget''
-			//for each (exit) point of the expanding city
-			foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
+			if(nextL.find(K | (BIT0 << m))==nextL.end()  ) //if we haven't yet stumbled upon such a state
 			{
-				//find this state's cost in view of prevL through (BF) 
-				auto xK_Cost = minmin(x, K, prevL, p, D);
-				if(notFathomed_strictly(  xK_Cost
-										, elCheapoLB(x,setMinus(p.wkOrd.omask,K).reset(m),p,D).first
-										, this->UB))
+                		bool canExpandWith_m = false;//default to ``can't expand:over budget''
+                		//for each (exit) point of the expanding city
+                		foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast) 
 				{
-					canExpandWith_m = true;
-					thisL[K].emplace(x, xK_Cost);
+                    			//find this state's cost in view of prevL through (BF)
+                    			auto xK_Cost = minmin(x, K, prevL, p, D);
+                    			if (notFathomed_strictly(xK_Cost, elCheapoLB(x, setMinus(p.wkOrd.omask, K).reset(m), p, D).first,
+                                             this->UB)) 
+					{
+                        			canExpandWith_m = true;
+						#pragma omp critical(costwrite)//prevent concurrent writes
+                        			thisL[K].emplace(x, xK_Cost);
+                    			}
+		    			else nFathSt++;//so it's fathomed; increase the counter
+                		}//next (exit) x from the city m
+                		//expand the next layer with m if it's worth it (if at least one state is not over budget)
+                		if (canExpandWith_m)
+                    		{
+					#pragma omp critical(statewrite)//prevent concurrent writes
+					nextL[K | (BIT0 << m)].clear();
 				}
-				else nFathSt++;//so it's fathomed; increase the counter
-			}//next (exit) x from the city m 
-			//expand the next layer with m if it's worth it (if at least one state is not over budget)
-			if (canExpandWith_m)
-				nextL[K | (BIT0 << m)].clear();
+            		}
 		}//next expanding city m\in EK
 
 		return nFathSt;//tell the caller how many states were fathomed in view of UB and elCheapoLB
@@ -84,23 +90,30 @@ struct t_BBDP : public t_DP
 		mtag l = 1; //current layer number
 		for (l = 1; l < p.dim; l++)//for layers 1..dim-1;
 		{
-			//=================OMP=========TASKS====================/
 			//for each task set (ideal/filter) of cardinality l
 			size_t nStates = 0;//to count the states at this layer
 			size_t nFathomedStates = 0; //to count the states FATHOMED at this layer
+//=================OMP=========TASKS====================/
+			#pragma omp parallel default (shared)
+			#pragma omp single nowait
 			for (auto ts : layer[l])//implemented as ts.first; .second is for the states
 			{
 				/*recall: FWD:coMin, BWD:coMax
 				t_bin fexp = D.gE(ts.first, p.ord, p.wkOrd);*/
 				//compute (BF) for all (x,K): x\in fexp, K=ts.first; it returns the number of FATHOMED states
-				nFathomedStates+=compExpandBF(ts.first
-					, D.gE(ts.first, p.ord, p.wkOrd)
-					, layer[l - 1]
-					, layer[l]
-					, layer[l + 1]);
-				nStates += layer[l][ts.first].size();//count the states associated with ts.first
+				#pragma omp task untied firstprivate(ts)
+				{
+					nFathomedStates+=compExpandBF(ts.first
+						, D.gE(ts.first, p.ord, p.wkOrd)
+						, layer[l - 1]
+						, layer[l]
+						, layer[l + 1]);
+					nStates += layer[l][ts.first].size();//count the states associated with ts.first
+				}
 			}//next task set (filter)
+			#pragma omp taskwait
 //-----------OMP-------------TASKS-------DONE-----------/
+			#pragma omp master
 			{//all current-layer states' values computed; tasksets not wholly fathomed were expanded.
 
 				slnTime.vlayerDone[l] = myClock::now();//get the current time
@@ -127,6 +140,7 @@ struct t_BBDP : public t_DP
 					break;
 				}
 			}
+		#pragma omp barrier
 		}//next layer
 		auto bfEndTime_t = time(NULL);
 		t_stateDesc full;
