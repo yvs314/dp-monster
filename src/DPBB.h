@@ -58,28 +58,26 @@ struct t_BBDP : public t_DP
 		{
 			if(nextL.find(K | (BIT0 << m))==nextL.end()  ) //if we haven't yet stumbled upon such a state
 			{
-                		bool canExpandWith_m = false;//default to ``can't expand:over budget''
-                		//for each (exit) point of the expanding city
-                		foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast) 
+                bool canExpandWith_m = false;//default to ``can't expand:over budget''
+                //for each (exit) point of the expanding city
+                foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
 				{
-                    			//find this state's cost in view of prevL through (BF)
-                    			auto xK_Cost = minmin(x, K, prevL, p, D);
-                    			if (notFathomed_strictly(xK_Cost, elCheapoLB(x, setMinus(p.wkOrd.omask, K).reset(m), p, D).first,
-                                             this->UB)) 
-					{
-                        			canExpandWith_m = true;
-						#pragma omp critical(costwrite)//prevent concurrent writes
+                    if (auto xK_Cost = minmin(x, K, prevL, p, D)
+                	        ;notFathomed_strictly(xK_Cost, elCheapoLB(x, setMinus(p.wkOrd.omask, K).reset(m), p, D).first,this->UB))
+			        {
+                                canExpandWith_m = true;
+						        #pragma omp critical(costwrite)//prevent concurrent writes
                         			thisL[K].emplace(x, xK_Cost);
-                    			}
-		    			else nFathSt++;//so it's fathomed; increase the counter
-                		}//next (exit) x from the city m
-                		//expand the next layer with m if it's worth it (if at least one state is not over budget)
-                		if (canExpandWith_m)
-                    		{
+			        }
+		    	    else nFathSt++;//so it's fathomed; increase the counter
+				}//next (exit) x from the city m
+                //expand the next layer with m if it's worth it (if at least one state is not over budget)
+                if (canExpandWith_m)
+                {
 					#pragma omp critical(statewrite)//prevent concurrent writes
 					nextL[K | (BIT0 << m)].clear();
 				}
-            		}
+			}
 		}//next expanding city m\in EK
 
 		return nFathSt;//tell the caller how many states were fathomed in view of UB and elCheapoLB
@@ -114,33 +112,41 @@ struct t_BBDP : public t_DP
 			#pragma omp taskwait
 //-----------OMP-------------TASKS-------DONE-----------/
 			#pragma omp master
-			{//all current-layer states' values computed; tasksets not wholly fathomed were expanded.
-
-				slnTime.vlayerDone[l] = myClock::now();//get the current time
-				//measure current memory use /w respect to last recorded
-				auto memUse = t_memRec();
-				//record it
-				slnMem.emplace_back(memUse);
-				nStatesTotal += nStates;//add this layer's state count to the total
-				nFathomedStatesTotal += nFathomedStates;//add this layer's fathomed states' count to the total
-				
-				//brag(layerNumber:wall-clock:delta:worstState:bestState)
-				slnLog.open(logName, std::ios_base::app);
-				slnLog << mkReportL(l, time(NULL), slnTime._rel_time(0, l), slnTime._rel_time(l - 1, l),
-					layer[l].size(), t_stateDesc(), t_stateDesc(), memUse, nStates, nFathomedStates) << "\n";
-				slnLog.close();
-			
+            {//all current-layer states' values computed; tasksets not wholly fathomed were expanded.
+                
+                slnTime.vlayerDone[l] = myClock::now();//get the current time
+                //measure current memory use /w respect to last recorded
+                auto memUse = t_memRec();
+                //record it
+                slnMem.emplace_back(memUse);
+                nStatesTotal += nStates;//add this layer's state count to the total
+                nFathomedStatesTotal += nFathomedStates;//add this layer's fathomed states' count to the total
+                
+                //brag(layerNumber:wall-clock:delta:worstState:bestState)
+                slnLog.open(logName, std::ios_base::app);
+                slnLog << mkReportL(l
+                                    , time(NULL)
+                                    , slnTime._rel_time(0, l)
+                                    , slnTime._rel_time(l - 1, l)
+                                    , layer[l].size()
+                                    , t_stateDesc()
+                                    , t_stateDesc()
+                                    , memUse
+                                    , nStates
+                                    , nFathomedStates) << "\n";
+                slnLog.close();
+            }
+#pragma omp barrier
 				/*now, if there's nothing to expand anymore
 				(every expansion is over p.UB), layer[l+1] is empty,
 				and we're done; break the cycle and stop the solution*/
-				if (layer.at(l + 1).empty()) {
+				if (layer.at(l + 1).empty())
+				{
 					slnLog.open(logName, std::ios_base::app);
 					slnLog << "\nDPBB_ALL_STATES_FATHOMED: impossible to get better than UB="<<this->UB << "\n";
 					slnLog.close();
 					break;
 				}
-			}
-		#pragma omp barrier
 		}//next layer
 		auto bfEndTime_t = time(NULL);
 		t_stateDesc full;
