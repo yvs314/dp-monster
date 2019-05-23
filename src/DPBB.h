@@ -223,6 +223,7 @@ struct t_BBDP : public t_DP
 		else //all states fathomed: given UB is proven to be a lower bound
 		{//consider not creating .dump in this case
 			slnDump.open(dumpName);
+			slnDump<<"\n VALUE: -1\n"; //let -1 say "UB proved true"
 			slnDump << "\n DPBB_ALL_STATES_FATHOMED: impossible to get better than UB=" << this->UB << "\n";
 			slnDump.close();
 		}
