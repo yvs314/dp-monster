@@ -136,8 +136,28 @@ using t_tsCvdInfo = phmap::flat_hash_map < ptag, t_cost >;
 //using t_tsCvdInfo = phmap::node_hash_map < ptag, t_cost >;
 //all states of a layer; maps a TASKSET:t_bin to its states \w cost (t_tsCvdInfo)
 //using t_stLayer = std::unordered_map < t_bin, t_tsCvdInfo >;
-using t_stLayer = phmap::flat_hash_map < t_bin, t_tsCvdInfo >;
-//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo >;
+//using t_stLayer = phmap::flat_hash_map < t_bin, t_tsCvdInfo>;
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo>;
+
+using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
+        , phmap::container_internal::hash_default_hash<t_bin>
+        , phmap::container_internal::hash_default_eq<t_bin>
+        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
+        , 12
+        , phmap::NullMutex >;
+
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
+//        , phmap::container_internal::hash_default_hash<t_bin>
+//        , phmap::container_internal::hash_default_eq<t_bin>
+//        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
+//        , 12
+//        , std::mutex >;
+
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo, \
+//phmap::container_internal::hash_default_hash<t_bin>, \
+//phmap::container_internal::hash_default_eq<t_bin>, \
+//std::allocator<std::pair<const t_bin, t_tsCvdInfo>>, >;
+
 //using t_stLayer = phmap::node_hash_map < t_bin, t_tsCvdInfo >;
 //using t_stLayer = phmap::parallel_node_hash_map < t_bin, t_tsCvdInfo >;
 //test: with custom hash bitset-base.h::t_binHash (plain by-word XOR)
