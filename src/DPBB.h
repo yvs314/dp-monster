@@ -66,15 +66,14 @@ struct t_BBDP : public t_DP
                 	        ;notFathomed_strictly(xK_Cost, elCheapoLB(x, setMinus(p.wkOrd.omask, K).reset(m), p, D).first,this->UB))
 			        {
                                 canExpandWith_m = true;
-						        #pragma omp critical(costwrite)//prevent concurrent writes
-                        			thisL[K].emplace(x, xK_Cost);
+                                thisL[K].emplace(x, xK_Cost);
 			        }
 		    	    else nFathSt++;//so it's fathomed; increase the counter
 				}//next (exit) x from the city m
                 //expand the next layer with m if it's worth it (if at least one state is not over budget)
                 if (canExpandWith_m)
                 {
-					#pragma omp critical(statewrite)//prevent concurrent writes
+//					#pragma omp critical(statewrite)//prevent concurrent writes
 					nextL[K | (BIT0 << m)].clear();
 				}
 			}
@@ -111,7 +110,6 @@ struct t_BBDP : public t_DP
 			}//next task set (filter)
 			#pragma omp taskwait
 //-----------OMP-------------TASKS-------DONE-----------/
-			#pragma omp master
             {//all current-layer states' values computed; tasksets not wholly fathomed were expanded.
                 
                 slnTime.vlayerDone[l] = myClock::now();//get the current time
@@ -136,7 +134,6 @@ struct t_BBDP : public t_DP
                                     , nFathomedStates) << "\n";
                 slnLog.close();
             }
-#pragma omp barrier
 				/*now, if there's nothing to expand anymore
 				(every expansion is over p.UB), layer[l+1] is empty,
 				and we're done; break the cycle and stop the solution*/
