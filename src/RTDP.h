@@ -162,7 +162,7 @@ struct t_DP
 				thisL[K].emplace(x, minmin(x, K, prevL, p, D));
 			}//next (exit) x from the city m 
 			//expand the next layer
-            #pragma omp critical(statewrite)
+//            #pragma omp critical(statewrite)
 			nextL[K | (BIT0 << m)].clear();
 		}//next expanding city m\in EK
 		

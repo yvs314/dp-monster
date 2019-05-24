@@ -2314,7 +2314,7 @@ class parallel_hash_set
     using KeyArgImpl =
         KeyArg<IsTransparent<Eq>::value && IsTransparent<Hash>::value>;
 
-    static_assert(N <= 12, "N = 12 means 4096 hash tables!");
+    static_assert(N <= 32, "N = 32 means 4294967296 hash tables!");
     constexpr static size_t num_tables = 1 << N;
     constexpr static size_t mask = num_tables - 1;
 

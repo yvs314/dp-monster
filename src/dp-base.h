@@ -28,8 +28,9 @@ to hashes---unordered_map
 #include "instance.h"
 #include <map>
 #include <unordered_map>
-#include<cstdint>
+#include <cstdint>
 #include "parallel_hashmap/phmap.h"
+#include "spinlock.h"
 
 //inline t_bin getMin(const t_bin& K, const t_vprecDsc& P, const t_binOrdWK& Pwk)
 
@@ -139,19 +140,19 @@ using t_tsCvdInfo = phmap::flat_hash_map < ptag, t_cost >;
 //using t_stLayer = phmap::flat_hash_map < t_bin, t_tsCvdInfo>;
 //using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo>;
 
-using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
-        , phmap::container_internal::hash_default_hash<t_bin>
-        , phmap::container_internal::hash_default_eq<t_bin>
-        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
-        , 12
-        , phmap::NullMutex >;
-
 //using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
 //        , phmap::container_internal::hash_default_hash<t_bin>
 //        , phmap::container_internal::hash_default_eq<t_bin>
 //        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
 //        , 12
-//        , std::mutex >;
+//        , phmap::NullMutex >;
+
+using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
+        , phmap::container_internal::hash_default_hash<t_bin>
+        , phmap::container_internal::hash_default_eq<t_bin>
+        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
+        , 16
+        , spinlock_t >;
 
 //using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo, \
 //phmap::container_internal::hash_default_hash<t_bin>, \
