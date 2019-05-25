@@ -22,8 +22,6 @@ restricted & exact dynamic programming solutions
 #include<queue>
 #include<list>
 
-//#include<omp.h>
-
 #include"dp-base.h"
 #include"dp-recovery.h"
 #include"instance.h"
@@ -160,12 +158,11 @@ struct t_DP
 			//for each (exit) point of the expanding city
 			foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
 			{
-#pragma omp critical(costwrite)
 				//find its cost in view of prevL through (BF) and put K->x->cost
 				thisL[K].emplace(x, minmin(x, K, prevL, p, D));
 			}//next (exit) x from the city m 
-#pragma omp critical(statewrite)
 			//expand the next layer
+//            #pragma omp critical(statewrite)
 			nextL[K | (BIT0 << m)].clear();
 		}//next expanding city m\in EK
 		
@@ -179,14 +176,14 @@ struct t_DP
 			//for each task set (ideal/filter) of cardinality l
 			size_t nStates = 0;//to count the states at this layer
 //=================OMP=========TASKS====================/
-#pragma omp parallel default (shared)
-#pragma omp single nowait
+            #pragma omp parallel default (shared)
+            #pragma omp single nowait
 			for (auto ts : layer[l])//implemented as ts.first; .second is for the states
 			{
 				/*recall: FWD:coMin, BWD:coMax
 				t_bin fexp = D.gE(ts.first, p.ord, p.wkOrd);*/
-				//compute (BF) for all (x,K): x\in fexp, K=ts.first; 
-#pragma omp task untied firstprivate(ts)
+				//compute (BF) for all (x,K): x\in fexp, K=ts.first;
+                #pragma omp task untied firstprivate(ts)
 				{
 					compExpandBF(ts.first
 							, D.gE(ts.first, p.ord, p.wkOrd)
@@ -196,9 +193,8 @@ struct t_DP
 					nStates += layer[l][ts.first].size();//count the states associated with ts.first
 				}
 			}//next task set (filter)
-#pragma omp taskwait
+            #pragma omp taskwait
 //-----------OMP-------------TASKS-------DONE-----------/
-#pragma omp master
 
 			//all current-layer states' values computed; all current-layer tasksets expanded.
 			{
@@ -214,7 +210,6 @@ struct t_DP
 					layer[l].size(), t_stateDesc(), t_stateDesc(), memUse, nStates) << "\n";
 				slnLog.close();
 			}
-#pragma omp barrier
 		}//next layer
 		
 		//done the ordinary layers; proceed to the complete problem BWD:(0,\rg{1}{dim})/FWD:(\trm,\rg{1}{dim})
@@ -347,7 +342,6 @@ struct t_hRtDP : public t_DP
 
 	t_solution solve()
 	{
-		//omp_set_num_threads(4);
 		for (mtag l = 1; l < p.dim; l++)//for layers 1..dim-1;
 		{
 			//there are at most B best states by definition; reserve B "cells" in advance

@@ -28,7 +28,9 @@ to hashes---unordered_map
 #include "instance.h"
 #include <map>
 #include <unordered_map>
-#include<cstdint>
+#include <cstdint>
+#include "parallel_hashmap/phmap.h"
+#include "spinlock.h"
 
 //inline t_bin getMin(const t_bin& K, const t_vprecDsc& P, const t_binOrdWK& Pwk)
 
@@ -129,9 +131,36 @@ dixi.
 
 
 //using t_tsCvdInfo = std::map < ptag, t_cost,std::less<ptag> >;
-using t_tsCvdInfo = std::map < ptag, t_cost >;
+//using t_tsCvdInfo = std::map < ptag, t_cost >;
+//using t_tsCvdInfo = std::unordered_map < ptag, t_cost >;
+using t_tsCvdInfo = phmap::flat_hash_map < ptag, t_cost >;
+//using t_tsCvdInfo = phmap::node_hash_map < ptag, t_cost >;
 //all states of a layer; maps a TASKSET:t_bin to its states \w cost (t_tsCvdInfo)
-using t_stLayer = std::unordered_map < t_bin, t_tsCvdInfo >;
+//using t_stLayer = std::unordered_map < t_bin, t_tsCvdInfo >;
+//using t_stLayer = phmap::flat_hash_map < t_bin, t_tsCvdInfo>;
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo>;
+
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
+//        , phmap::container_internal::hash_default_hash<t_bin>
+//        , phmap::container_internal::hash_default_eq<t_bin>
+//        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
+//        , 12
+//        , phmap::NullMutex >;
+
+using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
+        , phmap::container_internal::hash_default_hash<t_bin>
+        , phmap::container_internal::hash_default_eq<t_bin>
+        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
+        , 16
+        , spinlock_t >;
+
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo, \
+//phmap::container_internal::hash_default_hash<t_bin>, \
+//phmap::container_internal::hash_default_eq<t_bin>, \
+//std::allocator<std::pair<const t_bin, t_tsCvdInfo>>, >;
+
+//using t_stLayer = phmap::node_hash_map < t_bin, t_tsCvdInfo >;
+//using t_stLayer = phmap::parallel_node_hash_map < t_bin, t_tsCvdInfo >;
 //test: with custom hash bitset-base.h::t_binHash (plain by-word XOR)
 //using t_stLayer = std::unordered_map < t_bin, t_tsCvdInfo,t_binHash >;
 //principal structure: the vectory of layers, 0..dim
