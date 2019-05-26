@@ -1,1 +1,1 @@
-docker build . -t dpm
+docker build -t dpm .

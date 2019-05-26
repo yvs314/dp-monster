@@ -19,11 +19,16 @@ if __name__ == "__main__":
     parser.add_argument('--slurm', '-s', action='store_true', help='Use slurm or not')
     parser.add_argument('--out_dir', '-o', type=str, default=None,  help='Output directory. If not specified, ../results are used.')
     parser.add_argument('--force', '-f', action='store_true', help='Force run')
-    parser.add_argument('--nruns', '-n', type=int, default=5, help='Number of runs')
+    parser.add_argument('--nruns', '-n', type=int, default=1, help='Number of runs')
     parser.add_argument('--prefix', type=str, default="", help='Prefix for run directories')
+    parser.add_argument('--threads', type=int, default=16, help='Number of OMP_THREAD_LIMIT for subprocess')
     args = parser.parse_args()
 
-    if args.group is not  None:
+    env = os.environ
+    if 'OMP_THREAD_LIMIT' not in env:
+        env['OMP_THREAD_LIMIT'] = "%s" % args.threads
+
+    if args.group is not None:
         subtasks = tasks[args.group]
     else:
         subtasks = [args.task]
@@ -50,11 +55,11 @@ if __name__ == "__main__":
 
             print("Run DPM module with command: %s" % command)
             if args.slurm:
-                command = "srun -t 20:0:0 --mem=251G %s" % command
-                command = list(filter(len, command.split(' '))) + [file_name]
+                command = "srun -t 20:0:0 --exclusive --mem=251G %s" % command
+                command = list(filter(len, command.split(' ')))
                 proc.append(subprocess.Popen(command, stdout=subprocess.PIPE))
             else:
-                subprocess.run(command, shell=True, check=True, cwd=out_dir)
+                subprocess.run(command, shell=True, check=True, cwd=out_dir, env=env)
 
     # wait subprocess we run with slurm
     for p in proc:
