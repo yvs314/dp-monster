@@ -51,12 +51,14 @@ struct t_BBDP : public t_DP
 		, const t_bin& EK //its feasible expansions:its interfaces
 		, const t_stLayer& prevL//prev. layer, for computing BF
 		, t_stLayer& thisL//this layer, to fill in the BF's values
-		, t_stLayer& nextL)//next layer, for generating the next taskset(s)
+		, t_stLayer& nextL//next layer, for generating the next taskset(s)
+        , t_2clear& to_clear_nextL)//next layer, for generating the next taskset(s)
 	{
 		size_t nFathSt = 0;
 		foreach_elt(m, EK, p.dim)//for each expanding city
 		{
 			if(nextL.find(K | (BIT0 << m))==nextL.end()  ) //if we haven't yet stumbled upon such a state
+//			if(to_clear_nextL.contains(K | (BIT0 << m))) //if we haven't yet stumbled upon such a state
 			{
                 bool canExpandWith_m = false;//default to ``can't expand:over budget''
                 //for each (exit) point of the expanding city
@@ -74,19 +76,31 @@ struct t_BBDP : public t_DP
                 if (canExpandWith_m)
                 {
 //					#pragma omp critical(statewrite)//prevent concurrent writes
-					nextL[K | (BIT0 << m)].clear();
+//					nextL[K | (BIT0 << m)].clear();
+                    to_clear_nextL.insert((K | (BIT0 << m)));
 				}
 			}
 		}//next expanding city m\in EK
 
 		return nFathSt;//tell the caller how many states were fathomed in view of UB and elCheapoLB
 	}
+
+    static void collect_garbage(t_2clear& to_clear, t_stLayer& nextL) {
+        for (auto &thread_queue : to_clear) {
+            nextL[thread_queue].clear();
+//            for (auto key : thread_queue.second) {
+//                nextL[key].clear();
+//            }
+        }
+    }
+
 //==========THE=WHOLE=SOLUTION=PROCEDURE====================/
 	t_solution solve()
 	{
 		mtag l = 1; //current layer number
 		for (l = 1; l < p.dim; l++)//for layers 1..dim-1;
 		{
+            t_2clear to_clear;
 			//for each task set (ideal/filter) of cardinality l
 			size_t nStates = 0;//to count the states at this layer
 			size_t nFathomedStates = 0; //to count the states FATHOMED at this layer
@@ -104,11 +118,14 @@ struct t_BBDP : public t_DP
 						, D.gE(ts.first, p.ord, p.wkOrd)
 						, layer[l - 1]
 						, layer[l]
-						, layer[l + 1]);
+						, layer[l + 1]
+                        , to_clear);
 					nStates += layer[l][ts.first].size();//count the states associated with ts.first
 				}
 			}//next task set (filter)
 			#pragma omp taskwait
+
+            collect_garbage(to_clear, layer[l+1]);
 //-----------OMP-------------TASKS-------DONE-----------/
             {//all current-layer states' values computed; tasksets not wholly fathomed were expanded.
                 

@@ -21,6 +21,8 @@ restricted & exact dynamic programming solutions
 #include<fstream>
 #include<queue>
 #include<list>
+#include <omp.h>
+#include <thread>
 
 #include"dp-base.h"
 #include"dp-recovery.h"
@@ -151,7 +153,8 @@ struct t_DP
 		, const t_bin& EK //its feasible expansions:its interfaces
 		, const t_stLayer& prevL//prev. layer, for computing BF
 		, t_stLayer& thisL//this layer, to fill in the BF's values
-		, t_stLayer& nextL)//next layer, for generating the next taskset(s)
+//		, t_stLayer& nextL//next layer, for generating the next taskset(s)
+		, t_2clear& to_clear_nextL)//next layer, for generating the next taskset(s)
 	{
 		foreach_elt(m, EK, p.dim)//for each expanding city
 		{
@@ -160,19 +163,31 @@ struct t_DP
 			{
 				//find its cost in view of prevL through (BF) and put K->x->cost
 				thisL[K].emplace(x, minmin(x, K, prevL, p, D));
-			}//next (exit) x from the city m 
+			}//next (exit) x from the city m
 			//expand the next layer
-//            #pragma omp critical(statewrite)
-			nextL[K | (BIT0 << m)].clear();
+//            to_clear_nextL[omp_get_thread_num()].push_back((K | (BIT0 << m)));
+//            to_clear_nextL[omp_get_thread_num()].insert((K | (BIT0 << m)));
+            to_clear_nextL.insert((K | (BIT0 << m)));
 		}//next expanding city m\in EK
-		
+
 		return;
 	}
 
+    static void collect_garbage(t_2clear& to_clear, t_stLayer& nextL) {
+        for (auto &thread_queue : to_clear) {
+            nextL[thread_queue].clear();
+//            for (auto key : thread_queue.second) {
+//                nextL[key].clear();
+//            }
+        }
+    }
+
 	t_solution solve()
 	{
+
 		for (mtag l = 1; l < p.dim; l++)//for layers 1..dim-1;
 		{
+	        t_2clear to_clear;
 			//for each task set (ideal/filter) of cardinality l
 			size_t nStates = 0;//to count the states at this layer
 //=================OMP=========TASKS====================/
@@ -189,11 +204,14 @@ struct t_DP
 							, D.gE(ts.first, p.ord, p.wkOrd)
 							, layer[l - 1]
 							, layer[l]
-							, layer[l + 1]);
+//							, layer[l + 1]
+							, to_clear);
 					nStates += layer[l][ts.first].size();//count the states associated with ts.first
 				}
 			}//next task set (filter)
-            #pragma omp taskwait
+			#pragma omp taskwait
+
+            collect_garbage(to_clear, layer[l+1]);
 //-----------OMP-------------TASKS-------DONE-----------/
 
 			//all current-layer states' values computed; all current-layer tasksets expanded.

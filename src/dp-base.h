@@ -29,6 +29,8 @@ to hashes---unordered_map
 #include <map>
 #include <unordered_map>
 #include <cstdint>
+#include <shared_mutex>
+#include <queue>
 #include "parallel_hashmap/phmap.h"
 #include "spinlock.h"
 
@@ -130,29 +132,41 @@ dixi.
 */
 
 
+
 //using t_tsCvdInfo = std::map < ptag, t_cost,std::less<ptag> >;
 //using t_tsCvdInfo = std::map < ptag, t_cost >;
 //using t_tsCvdInfo = std::unordered_map < ptag, t_cost >;
 using t_tsCvdInfo = phmap::flat_hash_map < ptag, t_cost >;
 //using t_tsCvdInfo = phmap::node_hash_map < ptag, t_cost >;
+//using t_tsCvdInfo = phmap::parallel_flat_hash_map < ptag, t_cost >;
+//using t_tsCvdInfo = phmap::parallel_flat_hash_map < ptag, t_cost
+//        , phmap::container_internal::hash_default_hash<ptag>
+//        , phmap::container_internal::hash_default_eq<ptag>
+//        , std::allocator<std::pair<const ptag, t_cost>>
+//        , 8
+//        , std::mutex >;
+
+//using t_tsCvdInfo = phmap::node_hash_map < ptag, t_cost >;
 //all states of a layer; maps a TASKSET:t_bin to its states \w cost (t_tsCvdInfo)
 //using t_stLayer = std::unordered_map < t_bin, t_tsCvdInfo >;
-//using t_stLayer = phmap::flat_hash_map < t_bin, t_tsCvdInfo>;
+//using t_stLayer = phmap::node_hash_map < t_bin, t_tsCvdInfo >;
+//using t_stLayer = phmap::parallel_node_hash_map < t_bin, t_tsCvdInfo >;
+using t_stLayer = phmap::flat_hash_map <t_bin, t_tsCvdInfo>;
 //using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo>;
 
 //using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
 //        , phmap::container_internal::hash_default_hash<t_bin>
 //        , phmap::container_internal::hash_default_eq<t_bin>
 //        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
-//        , 12
+//        , 10
 //        , phmap::NullMutex >;
 
-using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
-        , phmap::container_internal::hash_default_hash<t_bin>
-        , phmap::container_internal::hash_default_eq<t_bin>
-        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
-        , 16
-        , spinlock_t >;
+//using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
+//        , phmap::container_internal::hash_default_hash<t_bin>
+//        , phmap::container_internal::hash_default_eq<t_bin>
+//        , std::allocator<std::pair<const t_bin, t_tsCvdInfo>>
+//        , 8
+//        , std::mutex >;
 
 //using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo, \
 //phmap::container_internal::hash_default_hash<t_bin>, \
@@ -165,6 +179,26 @@ using t_stLayer = phmap::parallel_flat_hash_map < t_bin, t_tsCvdInfo
 //using t_stLayer = std::unordered_map < t_bin, t_tsCvdInfo,t_binHash >;
 //principal structure: the vectory of layers, 0..dim
 using t_vstLayer = std::vector < t_stLayer >;
+
+//using t_2clearSet = phmap::parallel_flat_hash_set<t_bin>;
+//using t_2clearSet = phmap::parallel_flat_hash_set<t_bin
+//        , phmap::container_internal::hash_default_hash<t_bin>
+//        , phmap::container_internal::hash_default_eq<t_bin>
+//        , std::allocator<t_bin>
+//        , 8
+//        , spinlock_t
+//>;
+//using t_2clear = phmap::flat_hash_map< size_t, phmap::flat_hash_set< t_bin > >;
+//using t_2clear = std::vector< phmap::flat_hash_set< t_bin > >;
+//using t_2clear = phmap::flat_hash_map< size_t, phmap::flat_hash_set< t_bin > >;
+//using t_2clear = std::vector< std::vector< t_bin > >;
+using t_2clear = phmap::parallel_flat_hash_set<t_bin
+        , phmap::container_internal::hash_default_hash<t_bin>
+        , phmap::container_internal::hash_default_eq<t_bin>
+        , std::allocator<t_bin>
+        , 10
+        , std::mutex
+>;
 //--------------------------------------------------------/
 
 //==========BF==Functions==============================/
@@ -185,6 +219,7 @@ inline t_cost minmin(const ptag x
 		t_bin tryPrec = (K ^ (BIT0 << m));//say we went x->-m->-K\setminus\{m\}; x-->m_pin-->m_pout-->K\setminus\{m\}
 		//get v(m_pout, K\setminus\{m\}) if it was retained; try for all (m_pin, m_pout)
 		//if we've actually been there before
+
 		if (prevL.find(tryPrec) != prevL.end())
 		{
 			foreach_point(mpin, p.popInfo[m].pfirst, p.popInfo[m].plast)
