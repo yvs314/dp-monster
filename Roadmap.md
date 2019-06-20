@@ -1,11 +1,11 @@
 # Roadmaps, Results, and Papers
 
 ## Paper 1. Are 3TB an overkill? Shared-memory parallelism in DP/DPBB for TSP-PC and the like. 
- 1. `WE'RE HERE` OpenMP multithreaded implementation of DP for TSP-PC that scales _well enough_ 
- 2. Multithreaded Bounded DP (DPBB) for TSP-PC, with best available upper bounds. Should _just work_, must be tested; see below
+ 1. `DONE` OpenMP multithreaded implementation of DP for TSP-PC that scales _well enough_ 
+ 2. `WE'RE HERE` Multithreaded Bounded DP (DPBB) for TSP-PC, with best available upper bounds. Should _just work_, must be tested; see below. (2.1) To better compare DPBB with DP, make `dry-run` DPBB: run LB for each state, count fathomed states, but retain fathomed states. This comparison lets one see how well does each LB heuristic perform against _worst case_ of not fathoming anything at all.
  3. Test DP & DPBB on Bottleneck TSP-PC (`-t BTSP`). Testing DPBB would require some upper bounds, obtainable through Restricted DP (`-H [1,10,100,1000,100000]`) in reasonable time
- 4. ??? ~Scratch~ Close `kro124p4.sop` (most probably through DPBB, but these 3TB, with the _new main data structure_, could take it as well)
- 5. PROFIT! //if we close something, the paper might make Q1 in, say, _Computers & Operations Research_.
+ 4. `DONE` ~Scratch~  Close `kro124p4.sop` (most probably through DPBB, but these 3TB, with the _new main data structure_, could take it as well)
+ 5. PROFIT! If we close something, the paper might make Q1 in, say, _Computers & Operations Research_. Actually, there's an [_Optimization Methods and Software_](https://www.scimagojr.com/journalsearch.php?q=28538&tip=sid) issue connected with MOTOR-2019. I'd rather we push _shared-memory_ results there, along with the general framework for testing DPBB, thereby saving better LBs and _distributed_ parallelization for sweet _C&OR_.
  6. option: add SOPLIB to consideration. Larger scale (100–600 cities), slightly different input format (just the matrix). YS: generate the missing parts of TSPLIB format for these, make complexity estimates 
  7. brutal option: brute-force improve _lower bounds_ for really hard problems through DPBB
  
