@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument('--force', '-f', action='store_true', help='Force run')
     parser.add_argument('--nruns', '-n', type=int, default=1, help='Number of runs')
     parser.add_argument('--prefix', type=str, default="", help='Prefix for run directories')
-    parser.add_argument('--threads', type=int, default=16, help='Number of OMP_THREAD_LIMIT for subprocess')
+    parser.add_argument('--threads', type=int, default=1, help='Number of OMP_THREAD_LIMIT for subprocess')
     args = parser.parse_args()
 
     env = os.environ
