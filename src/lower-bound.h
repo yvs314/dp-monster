@@ -56,13 +56,24 @@ t_vArcs mkDummyV_Arcs(ptag arcNumber)
 //-------------------------------------------/
 
 //=====elCheapo-LB===========================/
-/* not even MSAP: just a node-greedy solution; still a valid lower bound, and blazingly fast 
+/*
+CAVEAT: non-GTSP, FWD-only
+  not even MSAP: just a node-greedy solution; still a valid lower bound, and blazingly fast
     0. do not take the precedence-proscribed edges; either cost=INF or direct consideration of who sends where
     1. ignore the terminal for now; that's still a lower bound in most cases
     2. think about solution output / through Boost.Graph
-    3. direction. FWD: path *from* root r; BWD: path *to* root r; 
+    3. direction. FWD: path root r-->\trm; BWD: path base 0-->r;
     BOTH: r=x, V= \rgn\setminus K 
  */
+/*
+ * REFIT scenario:
+ * 1. Kill GTSP-like foreach_point, for convenience. GTSP-compatible LBs are a totally different matter anyway
+ * 2. Add transparent BWD support (might decrease performance
+ * 3. Remove failsafe test (r\notin V)
+ * NOTE: varying direction in elCheapo. If there's no time/seq-dependence,
+ * the direction of MSAP traversal is irrelevant, so we can just choose the best one
+ */
+
 inline std::pair<t_cost,t_vArcs> elCheapoLB(const ptag r //MSAP root; not in V 
                     , const t_bin& V // cities to be spanned by the MSAP
                     , const t_Instance& p
@@ -70,8 +81,24 @@ inline std::pair<t_cost,t_vArcs> elCheapoLB(const ptag r //MSAP root; not in V
 //instead of thinking about INF, there are other ways to avoid 
 {
     if (! (D == FWD)) exit(EXIT_FAILURE); //crash if not FWD; a STOPGAP
-	if (V.test(r)) exit(EXIT_FAILURE);//crash if r belongs to V
-/* it's FWD; 
+	if (V.test(p.cityof[r])) exit(EXIT_FAILURE);//crash if r belongs to V
+//ptag startPt,endPt; t_bin fsbEntryV;
+//if(D == FWD)//this is for proper direction, which could yield proper KCvH traveling deliveryman costs
+//{// it's' FWD:
+//    startPt=r;//start at the given vertex
+//    fsbEntryV= getMin(V,p.ord,p.wkOrd);//we can only go r--> Min[V]=Min[1..n\setminus(K\cup\{r})], where (K,r) is a state
+//    endPt=p.dim+1;//end at the terminal
+//    //last arc is  from getMax[V] anyway
+//}
+//else{
+//    startPt=0;//start at the base
+//    fsbEntryV= getMin(V,p.ord,p.wkOrd);//it's still Min[V], we can only go 0 --> Min[V]
+//    endPt=r;//end at r
+//    //last arc is from getMax[V] anyway
+//}
+
+
+	/* it's FWD;
  * 1. get min-arc *exiting* r and entering V // only r--> MIN[V]
  * 2. get min-arcs *entering* vertices from V
  * 3. get min-arc *entering* the terminal from some vertex from V */
