@@ -78,11 +78,12 @@ inline std::pair<t_cost,t_vArcs> elCheapoLB(const ptag r //MSAP root; not in V
                     , const t_bin& V // cities to be spanned by the MSAP
                     , const t_Instance& p
                     , const t_Direction& D) //FWD/BWD
-//instead of thinking about INF, there are other ways to avoid 
 {
     if (! (D == FWD)) exit(EXIT_FAILURE); //crash if not FWD; a STOPGAP
 	if (V.test(p.cityof[r])) exit(EXIT_FAILURE);//crash if r belongs to V
-//ptag startPt,endPt; t_bin fsbEntryV;
+ptag startPt,endPt;
+t_bin fsbEntryV=getMin(V,p.ord,p.wkOrd); //can have arcs directed from startPt
+t_bin fsbExitV=getMax(V,p.ord,p.wkOrd);//can be the source of arcs directed to endPt
 //if(D == FWD)//this is for proper direction, which could yield proper KCvH traveling deliveryman costs
 //{// it's' FWD:
 //    startPt=r;//start at the given vertex

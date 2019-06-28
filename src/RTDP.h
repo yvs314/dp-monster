@@ -158,7 +158,8 @@ struct t_DP
 	{
 		foreach_elt(m, EK, p.dim)//for each expanding city
 		{
-			//for each (exit) point of the expanding city
+			
+		    //for each (exit) point of the expanding city
 			foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
 			{
 				//find its cost in view of prevL through (BF) and put K->x->cost
@@ -172,7 +173,9 @@ struct t_DP
 
 		return;
 	}
-
+//in fact, it would be enough to copy all the elements of to_clear into nextL as keys (with empty values)
+//though there is little reason to believe much performance is lost here
+//since the complexity of .clear() on already empty elements is minuscule
     static void collect_garbage(t_2clear& to_clear, t_stLayer& nextL) {
         for (auto &thread_queue : to_clear) {
             nextL[thread_queue].clear();
