@@ -15,7 +15,8 @@ NB! v.1.0 is TSP(-PC)-only, might not handle BTSP etc.
 #define LB_H_
 
 #include"instance.h"
-//#include<tuple>
+
+#include<forward_list>
 
 //=====AUX==DATA==STRUCTURES=ETC.================/
 using t_arc  //I'd rather have its fields immutable, but const fields wreak havok in some programming patterns
@@ -33,9 +34,10 @@ using t_arc  //I'd rather have its fields immutable, but const fields wreak havo
    }
 };
 
-using t_vArcs = std::vector<t_arc>;
+//forward_list: minimum overhead
+using t_flArcs = std::forward_list<t_arc>;
 
-std::string dumpArcs(const t_vArcs& inp)
+std::string dumpArcs(const t_flArcs& inp)
 {
 	std::string out="";
 	for (auto arc : inp)
@@ -49,9 +51,9 @@ std::string dumpArcs(const t_vArcs& inp)
 const t_arc dummyArc {0,0,INF};
 
 //initialize all to dummyArc
-t_vArcs mkDummyV_Arcs(ptag arcNumber)
+t_flArcs mkDummyV_Arcs(ptag arcNumber)
 {
-    return t_vArcs(arcNumber, dummyArc);
+    return t_flArcs(arcNumber, dummyArc);
 }
 //-------------------------------------------/
 
@@ -74,73 +76,55 @@ CAVEAT: non-GTSP, FWD-only
  * the direction of MSAP traversal is irrelevant, so we can just choose the best one
  */
 
-inline std::pair<t_cost,t_vArcs> elCheapoLB(const ptag r //MSAP root; not in V 
+inline std::pair<t_cost,t_flArcs> elCheapoLB(const ptag r //MSAP root; not in V
                     , const t_bin& V // cities to be spanned by the MSAP
                     , const t_Instance& p
                     , const t_Direction& D) //FWD/BWD
 {
-    if (! (D == FWD)) exit(EXIT_FAILURE); //crash if not FWD; a STOPGAP
-	if (V.test(p.cityof[r])) exit(EXIT_FAILURE);//crash if r belongs to V
+
 ptag startPt,endPt;
-t_bin fsbEntryV=getMin(V,p.ord,p.wkOrd); //can have arcs directed from startPt
-t_bin fsbExitV=getMax(V,p.ord,p.wkOrd);//can be the source of arcs directed to endPt
-//if(D == FWD)//this is for proper direction, which could yield proper KCvH traveling deliveryman costs
-//{// it's' FWD:
-//    startPt=r;//start at the given vertex
-//    fsbEntryV= getMin(V,p.ord,p.wkOrd);//we can only go r--> Min[V]=Min[1..n\setminus(K\cup\{r})], where (K,r) is a state
-//    endPt=p.dim+1;//end at the terminal
-//    //last arc is  from getMax[V] anyway
-//}
-//else{
-//    startPt=0;//start at the base
-//    fsbEntryV= getMin(V,p.ord,p.wkOrd);//it's still Min[V], we can only go 0 --> Min[V]
-//    endPt=r;//end at r
-//    //last arc is from getMax[V] anyway
-//}
+t_bin V_Min=getMin(V,p.ord,p.wkOrd); //can receive  arcs directed from startPt
+t_bin V_Max=getMax(V,p.ord,p.wkOrd);//can be the source of arcs directed to endPt
 
-
-	/* it's FWD;
- * 1. get min-arc *exiting* r and entering V // only r--> MIN[V]
- * 2. get min-arcs *entering* vertices from V
- * 3. get min-arc *entering* the terminal from some vertex from V */
-// no.1 get min-arc *exiting* r and entering V // only r--> MIN[V]
-    t_vArcs sln = mkDummyV_Arcs(V.count()+1); t_cost out=0;
-    //m\in \Min[V], x\in M_m; and a poor man's min-fold directly below
-    foreach_elt(m, getMin(V,p.ord,p.wkOrd),p.dim )
-            foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
-                if (p.cost[r][x]< sln.front().arcCost)
-                    sln.front()=t_arc{r,x,p.cost[r][x]};
-    
-//     out+=sln.front().arcCost;//add to the accumulator
-    out = p.f.cAgr(out,sln.front().arcCost);
-    //done with first arc; now find minimum |V|-1 arcs to V\setminus cityof[sln[0].vxTo
-    
-    ptag currVx=1; //how many proper (non-root, non-trm) vertices are processed, including the upcoming one
-    const auto V1 = setMinus(V,BIT0 << p.cityof[sln.front().vxTo]);
-//find min. arc to every l\in V1 from V1\setminus (those l sends to)
-    foreach_elt(l,V1, p.dim)
-    {
-        foreach_point(y, p.popInfo[l].pfirst, p.popInfo[l].plast)
-        {
-            const auto into_l = setMinus(V1,p.ord[l].sends_to).reset(l);//reset(l):don't forget to remove l-->l
-            foreach_elt(m,into_l,p.dim)
-                foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
-                    if (p.cost[x][y]< sln[currVx].arcCost)
-                        sln[currVx]=t_arc{x,y,p.cost[x][y]};
-        }
-        out = p.f.cAgr(out,sln.at(currVx).arcCost); //add this min arc's cost to the accumulator
-        //out+=sln[currVx].arcCost; //add this min arc's cost to the accumulator
-        currVx++;//ok, processed vertex number l
+if(D == FWD)//this is for proper direction, which could yield proper KCvH traveling deliveryman costs
+    {// it's FWD:
+    startPt=r;//start at the given vertex
+    endPt=p.dim+1;//end at the terminal
     }
-    //now find the last arc, which goes to the terminal p.popInfo[p.dim+1].pfirst from \Max[V]
-    foreach_elt(m, getMax(V, p.ord, p.wkOrd),p.dim)
-        foreach_point(x, p.popInfo[m].pfirst, p.popInfo[m].plast)
-            if (p.cost[x][p.popInfo[p.dim+1].pfirst]< sln.back().arcCost)
-                    sln.back()=t_arc{x,p.popInfo[p.dim+1].pfirst,p.cost[x][p.popInfo[p.dim+1].pfirst]};
+else// D == BWD
+{//it's BWD:
+    startPt=0;//start at the base
+    endPt=r;//end at r
+}
+
+//we'll have one arc into  every vertex from V and one into endPt, V.count()+1
+t_flArcs sln {}; //start as empty solution list
+t_cost out=0;//
+    //find least-cost arcs into each city x  in V_Min, which may start at V\setminus\{v\}\cup\{startPt\}
+    foreach_elt(x, V,p.dim )
+    {
+        t_arc minArc_y_to_x = dummyArc;
+        t_bin V_from = (V_Min.test(x)) ? (setMinus(V, BIT0 << x).set(startPt)) : (setMinus(V, BIT0 << x));
+        foreach_elt(y, V_from, p.dim)
+        {
+            if (p.cost[y][x] < minArc_y_to_x.arcCost)
+                minArc_y_to_x = t_arc{y, x, p.cost[y][x]};
+        }
+        //now we've got the minimal arc from y to x; record it
+        sln.push_front(minArc_y_to_x);
+        out=p.f.cAgr(out,minArc_y_to_x.arcCost);
+    }
+    //finally, find and add the min-arc to endPt
+    t_arc minArc_x_to_endPt=dummyArc;
+    foreach_elt(x, V_Max, p.dim)
+    {
+        if (p.cost[x][endPt] < minArc_x_to_endPt.arcCost)
+            minArc_x_to_endPt = t_arc{x, endPt, p.cost[x][endPt]};
+    }
+    //now we've got the minimal arc from y to x; record it
+    sln.push_front(minArc_x_to_endPt);
+    out=p.f.cAgr(out,minArc_x_to_endPt.arcCost);
     
-    
-    out = p.f.cAgr(out,sln.back().arcCost); //add the cost of the final V->\trm arc 
-    //out += sln.back().arcCost; //add the final arc to the terminal
     return std::make_pair(out,sln); 
 }
 //---------------------------------------------------/
