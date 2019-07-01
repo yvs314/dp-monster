@@ -75,7 +75,7 @@ CAVEAT: non-GTSP
  * NOTE: varying direction in elCheapo. If there's no time/seq-dependence,
  * the direction of MSAP traversal is irrelevant, so we can just choose the best one
  */
-
+//this is the production version; doesn't retain solution, only its value (dummy .second)
 inline std::pair<t_cost,t_flArcs> elCheapoLB(const ptag r //MSAP root; not in V
                     , const t_bin& V // cities to be spanned by the MSAP
                     , const t_Instance& p
@@ -99,8 +99,65 @@ inline std::pair<t_cost,t_flArcs> elCheapoLB(const ptag r //MSAP root; not in V
     }
 
 //we'll have one arc into  every vertex from V and one into endPt, V.count()+1
-t_flArcs sln {}; //start as empty solution list
+static const t_flArcs sln {dummyArc}; //only dummy solution for production runs
 t_cost out=0;//
+    //find least-cost arcs into each city x  in V_Min, which may start at V\setminus\{v\}\cup\{startPt\}
+    foreach_elt(x, V,p.dim )
+    {
+        t_cost minCost_y_to_x = INF;
+        t_bin V_from = setMinus(V, BIT0 << x);
+        foreach_elt(y, V_from, p.dim)
+        {
+            if (p.cost[y][x] < minCost_y_to_x)
+                minCost_y_to_x = p.cost[y][x];
+        }
+         //must be separate since 0 is never iterated through by foreach_elt (0 is startPt in BWD)
+        if(V_Min.test(x) //if x is minimal in V, also test  startPt-->x;
+            && p.cost[startPt][x] < minCost_y_to_x)
+                minCost_y_to_x = p.cost[startPt][x];
+        
+        //now we've got the minimal arc from y to x; record it
+        out=p.f.cAgr(out,minCost_y_to_x);
+    }
+    //finally, find and add the min-arc to endPt
+    t_cost minCost_x_to_endPt=INF;
+    foreach_elt(x, V_Max, p.dim)
+    {
+        if (p.cost[x][endPt] < minCost_x_to_endPt)
+            minCost_x_to_endPt =p.cost[x][endPt];
+    }
+    //now we've got the minimal arc from y to x; record it
+    out=p.f.cAgr(out,minCost_x_to_endPt);
+    
+    return std::make_pair(out,sln); 
+}
+
+//this version remembers the solution (arcs and all), not just its value
+inline std::pair<t_cost,t_flArcs> elCheapoLB_dbg(const ptag r //MSAP root; not in V
+                                             , const t_bin& V // cities to be spanned by the MSAP
+                                             , const t_Instance& p
+                                             , const t_Direction& D) //FWD/BWD
+{
+    assert(!V.test(r)); // root is never in V
+    
+    ptag startPt,endPt;
+    t_bin V_Min=getMin(V,p.ord,p.wkOrd); //can receive  arcs directed from startPt
+    t_bin V_Max=getMax(V,p.ord,p.wkOrd);//can be the source of arcs directed to endPt
+    
+    if(D == FWD)//this is for proper direction, which could yield proper KCvH traveling deliveryman costs
+    {// it's FWD:
+        startPt=r;//start at the given vertex
+        endPt=p.dim+1;//end at the terminal
+    }
+    else// D == BWD
+    {//it's BWD:
+        startPt=0;//start at the base
+        endPt=r;//end at r
+    }
+
+//we'll have one arc into  every vertex from V and one into endPt, V.count()+1
+    t_flArcs sln {}; //start as empty solution list
+    t_cost out=0;//
     //find least-cost arcs into each city x  in V_Min, which may start at V\setminus\{v\}\cup\{startPt\}
     foreach_elt(x, V,p.dim )
     {
@@ -111,10 +168,10 @@ t_cost out=0;//
             if (p.cost[y][x] < minArc_y_to_x.arcCost)
                 minArc_y_to_x = t_arc{y, x, p.cost[y][x]};
         }
-         //must be separate since 0 is never iterated through by foreach_elt (0 is startPt in BWD)
+        //must be separate since 0 is never iterated through by foreach_elt (0 is startPt in BWD)
         if(V_Min.test(x) //if x is minimal in V, also test  startPt-->x;
-            && p.cost[startPt][x] < minArc_y_to_x.arcCost)
-                minArc_y_to_x = t_arc{startPt, x, p.cost[startPt][x]};
+           && p.cost[startPt][x] < minArc_y_to_x.arcCost)
+            minArc_y_to_x = t_arc{startPt, x, p.cost[startPt][x]};
         
         //now we've got the minimal arc from y to x; record it
         sln.push_front(minArc_y_to_x);
@@ -131,7 +188,7 @@ t_cost out=0;//
     sln.push_front(minArc_x_to_endPt);
     out=p.f.cAgr(out,minArc_x_to_endPt.arcCost);
     
-    return std::make_pair(out,sln); 
+    return std::make_pair(out,sln);
 }
 //---------------------------------------------------/
 
