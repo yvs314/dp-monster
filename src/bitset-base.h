@@ -119,6 +119,7 @@ inline void ssetMinus(t_bin& left, const t_bin& right)
 
 //seek (next) set bit: return the next more significant than pos 1 bit or ``last''
 //i.e., ``last'' means no bits set beyond pos
+//CAVEAT: couldn't see if bit #0 is set
 inline uint16_t  ssb(const t_bin input, const uint16_t pos, const uint16_t last)
 {
 	uint16_t ct = pos + 1;

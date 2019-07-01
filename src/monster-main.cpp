@@ -41,7 +41,7 @@ DO NOT COMBINE -H  and --UB yet; right now, --UB is silently given priority
 int main(int argc, char* argv[])
 {
 	int debugRun = 0;
-	//int debugRun = 3;
+//	int debugRun = 2;
 	int myargc = argc; 
 	t_lines myargv = args2lines(argc,argv);
 	
@@ -52,7 +52,15 @@ int main(int argc, char* argv[])
 
 		switch (debugRun)
 		{
-		case 3:
+            case 2:
+                myargv.push_back(argv[0]);
+                myargv.push_back("../data/TSPLIB/ESC07.sop");
+                myargv.push_back("-d");
+                myargv.push_back("BWD");
+                myargv.push_back("--UB");
+                myargv.push_back("2125");
+                break;
+		    case 3:
             myargv.push_back(argv[0]);
             myargv.push_back("../data/TSPLIB/ESC07.sop");
             myargv.push_back("--UB");
