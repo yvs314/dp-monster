@@ -92,14 +92,16 @@ t_cstMx mapInfMx(const t_cstMx& input)
 //auxiliary: test if t_vprecDsc's principal ideal and principal filter representations match
 //TODO: cut preprocessing out, make a separate prep.h/ord-rel.h, dependent on prec-ord.h and reader-base.h (for t_cstMx)
 
-/*given a “raw” TSPLIB-like cost matrix, 
+
+/*given a raw TSPLIB-like cost matrix,
 return a preprocessed cost matrix: all transitive arcs are INF, all dual arcs are INF
 WARNING: assumes _transitive_ precedence constraints as input in t_cstMx*/
 t_cstMx getPrepCstMx(const t_cstMx& input)
 {
 	
 	auto P = getPrec(input); //get the precedence constraints as t_vprecDsc
-	auto Psquare = compose(P, P);//find the _transitive_ edges (not part of trans.reduction) as t_vprecDsc
+	auto PP=addPrecDptTrm(P);//patch P to include all info about depot and terminal
+	auto Psquare = compose(PP, PP);//find the _transitive_ edges (not part of trans.reduction) as t_vprecDsc
 	//replace (-1) with INF: kill the transitive edges
 	auto zat = mapInfMx(to_cstMx(Psquare));
 	//replace (-1) with INF: kill the dual relation

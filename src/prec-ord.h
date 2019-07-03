@@ -73,10 +73,22 @@ struct t_binOrdWK
 };
 
 //===========RELATIONS:==COMPOSITION==AND==SETMINUS=================/
-//assume L[0],R[0],L[size],R[size], size=dim+1, are special base/terminal; do not consider them
 
-//assume L[0],R[0],L[size],R[size], size=dim+1, are special base/terminal; do not consider them
-/*relation composition; base L[0] and terminal L[size()-1] are ignored*/
+//makes  all non-depot non-terminal  receive from depot, send to terminal
+ inline t_vprecDsc addPrecDptTrm(const t_vprecDsc& P)
+{
+    auto out = P; // copy the precedence constraints
+    const mtag dpt = 0; //depot is 0
+    const mtag trm = P.size()-1; //terminal is the last city
+    for(auto city=dpt+1; city<trm;city++)
+    {
+        out[city].receives_from.set(dpt);
+        out[city].sends_to.set(trm);
+    }
+   return out;
+}
+
+//assume L[0],R[0],L[size],R[size], size=dim+1, are special depot/terminal;
 inline t_vprecDsc compose(const t_vprecDsc& L, const t_vprecDsc& R)
 {
 	if (L.size() != R.size())
@@ -85,7 +97,7 @@ inline t_vprecDsc compose(const t_vprecDsc& L, const t_vprecDsc& R)
 		std::exit(EXIT_FAILURE);
 	}
 	t_vprecDsc out (L.size());//the new one is the same size
-	for (auto i = 1; i < L.size()-1; i++) //i=L.size()-1 is terminal, let's just forget about it
+	for (auto i = 0; i < L.size(); i++) //i=0 is depot, i=L.size()-1 is terminal; they are treated separately
 	{
 		//if there's at least one (a,i)\in L and (i,c)\in R, add all (a,c) to out
 		if (t_precDsc newPairs{ L[i].receives_from,R[i].sends_to };
