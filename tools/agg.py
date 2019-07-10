@@ -35,7 +35,7 @@ if __name__ == "__main__":
             file_name = os.path.join(run_dir, log_name)
             param = dict(zip(range(1, len(param)+1), param))
             with open(file_name, "r") as f:
-                run_time = float(f.read().split("BF + RECOVERY DURATION IN SECONDS:")[1])
+                run_time = float(f.read().split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
                 param[run] = (run_time)
             return param
         param_logs = list(map(extract_param, run_logs))
