@@ -1,0 +1,8 @@
+task;UB;noP;param;threads;
+br17.10.sop;55;;--noP --UB 58;
+br17.12.sop;55;;;1
+ESC07.sop;2125;;--param column rewrites all parametes;1;--additional --parameters without column
+ESC07.sop;2125;;;1;--additional --parameters without column
+ESC11.sop;2075; ;;1
+ESC12.sop;1675;;;1
+ESC25.sop;1681;;;16
