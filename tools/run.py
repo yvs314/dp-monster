@@ -40,7 +40,7 @@ def run_task(task_dict, run):
         command += " -f"
     command += " " + " ".join(task_dict['param'])
 
-    print("Run DPM module with command: %s" % command)
+    print("Run DPM module on %s threads with command: %s" % (task_dict['threads'], command))
     if args.slurm:
         command = "srun -t 20:0:0 --exclusive --mem=251G %s" % command
         command = list(filter(len, command.split(' ')))
@@ -60,19 +60,18 @@ def parse_batchfile(filename, common_task_dict):
     with open(filename) as csvfile:
         reader = csv.DictReader(csvfile, delimiter=';')
         for row in reader:
-            print(row)
             task_dict = common_task_dict.copy()
             param = []
             for key in row:
-                if key in common_task_dict:
-                    task_dict[key] = row[key]
-                elif row[key] is not None and len(row[key]) and key is not None:
-                    pref = '-' * min(len(key), 2)
-                    param += [pref + key, row[key]]
+                if row[key] is not None and len(row[key]) and key is not None:
+                    if key in common_task_dict:
+                        task_dict[key] = row[key]
+                    else:
+                        pref = '-' * min(len(key), 2)
+                        param += [pref + key, row[key]]
 
             if 'param' in row and len(row['param']):
                 param = row['param'].split(' ')
-                print(param)
             task_dict['param'] = param
             answer.append(task_dict)
     return answer
