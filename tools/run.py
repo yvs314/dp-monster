@@ -25,8 +25,7 @@ tasks = {
 
 def run_task(task_dict, run):
     env = os.environ
-    if 'threads' in task_dict and 'OMP_THREAD_LIMIT' not in env:
-        env['OMP_THREAD_LIMIT'] = "%s" % task_dict['threads']
+    env['OMP_THREAD_LIMIT'] = "%s" % task_dict['threads']
 
     task = task_dict['task']
     data_filename = join_path(task_dict['data_dir'], task)
