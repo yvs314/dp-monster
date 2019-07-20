@@ -45,7 +45,11 @@ def run_task(task_dict, run):
         command = list(filter(len, command.split(' ')))
         return subprocess.Popen(command, stdout=subprocess.PIPE)
     else:
-        subprocess.run(command, shell=True, check=True, cwd=out_dir, env=env)
+        try:
+            subprocess.run(command, shell=True, check=True, cwd=out_dir, env=env)
+        except Exception:
+            # just do nothing
+            pass
 
 
 def get_arg_dict(task, common_task_dict):
