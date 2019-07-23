@@ -124,10 +124,10 @@ inline std::pair<size_t,size_t> getMemUsage()
 
 /*
 cut 64-bit number of bytes [occupied] into 10-bit chunks,
-to make B-->KB-->MB-->GB-->PB representation; out.head is most-sig portion
+to make B-->KB-->MB-->GB-->TB representation; out.head is most-sig portion
 */
 //head = GB;
-//[3]=GB [2]=MB [1]=KB [0]=B; binary-decimal; inp BYTES-> GB*2^30 + MB*2^20 + KB*2^10+B
+//[4]=TB [3]=GB [2]=MB [1]=KB [0]=B; binary-decimal; inp BYTES-> TB*2^40 GB*2^30 + MB*2^20 + KB*2^10+B
 inline std::stack<uint16_t> toGMKbytes(uint64_t bytes)
 {
 	static const uint64_t KB = 1023;//0x3FF; bin: 10 ones
@@ -137,7 +137,7 @@ inline std::stack<uint16_t> toGMKbytes(uint64_t bytes)
 	{
 		auto chunk = ( bytes & KB);
 		out.push(chunk);
-		bytes >>= 10;//chuck 10 least-sig bits, 0..9; (B-->KB-->MB-->GB);
+		bytes >>= 10;//chuck 10 least-sig bits, 0..9; (B-->KB-->MB-->GB-->TB);
 	} while (bytes != 0);//stop if zero
 
 	return out;
@@ -146,8 +146,8 @@ inline std::stack<uint16_t> toGMKbytes(uint64_t bytes)
 //untested
 inline std::string to_stringBytes(const uint64_t bytes)
 {
-	std::ostringstream acc; const std::string sep = "~";//10GB~2MB~3KB~123B
-	std::deque<std::string> captions = { "GB", "MB", "KB", "B" };
+	std::ostringstream acc; const std::string sep = "~";//1TB~10GB~2MB~3KB~123B
+	std::deque<std::string> captions = { "TB", "GB", "MB", "KB", "B" };
 	auto cuts = toGMKbytes(bytes);
 	//retain only nonzero captions
 	while (cuts.size() < captions.size()) captions.pop_front();
