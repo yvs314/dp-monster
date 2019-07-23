@@ -18,7 +18,8 @@ if __name__ == "__main__":
     out_file_name += '.' + args.type
 
     col_names = ["task_name", "problem_type", "direction", "method"]
-    mean_col = '%sruns_mean' % args.prefix
+    avg_time_col = 'avg_time'
+    avg_ram_col = 'avg_RAM'
 
     out_file_name = os.path.join(out_dir, out_file_name)
 
@@ -28,15 +29,24 @@ if __name__ == "__main__":
     for run in runs:
         run_dir = os.path.join(in_dir, run)
         run_logs = list(filter(lambda s: s.split('.')[-1].lower() == 'log', os.listdir(run_dir)))
+
         def extract_param(log_name):
             param = log_name.split('-')
             task_name = param[0]
             param[-1] = '.'.join(param[-1].split('.')[:-1])
-            file_name = os.path.join(run_dir, log_name)
+            log_file_name = os.path.join(run_dir, log_name)
+            dump_file_name = log_file_name[:-3] + 'dump'
             param = dict(zip(range(1, len(param)+1), param))
-            with open(file_name, "r") as f:
-                run_time = float(f.read().split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
-                param[run] = (run_time)
+
+            if os.path.isfile(dump_file_name):
+                with open(dump_file_name, "r") as f:
+                    param['value'] = int(f.read().split("VALUE:")[1].splitlines()[0])
+                with open(log_file_name, "r") as f:
+                    fl = f.read()
+                    i = run.split("run")[-1]
+                    param["states"] = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
+                    param["time%s" % i] = float(fl.split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
+                    param["RAM%s" % i] = fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0].split('~')[0].strip()
             return param
         param_logs = list(map(extract_param, run_logs))
         new_df = pd.DataFrame(param_logs)
@@ -45,12 +55,16 @@ if __name__ == "__main__":
         else:
             df = pd.merge(df, new_df, how='outer')
 
-    run_columns = sorted(list(filter(lambda s: isinstance(s, str) and s.startswith(run_pref), df.columns)))
-    df[mean_col] = df[run_columns].mean(axis=1, skipna=True)
-    df.columns = list(map(lambda c: c if (not isinstance(c, int)) or (c > len(col_names)) else col_names[c-1], df.columns))
-    not_run_cols = list(filter(lambda s: not(isinstance(s, str) and s.startswith(run_pref)) and s != mean_col, df.columns))
+    time_columns = sorted(list(filter(lambda s: isinstance(s, str) and s.startswith('time'), df.columns)))
+    df[avg_time_col] = df[time_columns].mean(axis=1, skipna=True)
 
-    df = df[not_run_cols + [mean_col] + run_columns]
+    ram_columns = sorted(list(filter(lambda s: isinstance(s, str) and s.startswith('RAM'), df.columns)))
+    # df[avg_ram_col] = df[ram_columns].mean(axis=1, skipna=True)
+
+    df.columns = list(map(lambda c: c if (not isinstance(c, int)) or (c > len(col_names)) else col_names[c-1], df.columns))
+    not_run_cols = list(filter(lambda s: not(isinstance(s, str) and s.startswith('time')) and s != avg_time_col, df.columns))
+
+    df = df[not_run_cols + [avg_time_col] + time_columns]
     if args.type == "xlsx":
         df.to_excel(out_file_name, index=False)
     if args.type == "csv":
