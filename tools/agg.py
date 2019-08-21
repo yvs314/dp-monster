@@ -4,8 +4,6 @@ import os
 
 
 def aggregate(args):
-    # in_dir = os.path.join("..", "results") if args.in_dir is None else in_dir
-    # out_dir = os.path.join("..", "results") if args.out_dir is None else out_dir
     in_dir, out_dir = args.in_dir, args.in_dir if args.out_dir is None else args.out_dir
     out_file_name = "%sresult" % args.prefix if args.file is None else args.file
     out_file_name += '.' + args.type
@@ -37,7 +35,7 @@ def aggregate(args):
                 with open(log_file_name, "r") as f:
                     fl = f.read()
                     i = run.split("run")[-1]
-                    param["states"] = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
+                    param["states%s" % i] = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
                     param["time%s" % i] = float(fl.split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
                     param["RAM%s" % i] = fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0].split('~')[0].strip()
             return param
