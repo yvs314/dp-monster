@@ -35,6 +35,7 @@ def aggregate(args):
                 with open(log_file_name, "r") as f:
                     fl = f.read()
                     i = run.split("run")[-1]
+                    param["start%s" % i] = pd.to_datetime(fl.splitlines()[0].split("Started on")[-1].strip())
                     param["states%s" % i] = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
                     param["time%s" % i] = float(fl.split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
                     param["RAM%s" % i] = fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0].split('~')[0].strip()
