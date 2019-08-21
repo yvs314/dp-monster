@@ -94,9 +94,9 @@ if __name__ == "__main__":
     for prefix in sorted(prefixes):
         args.prefix = prefix
         df = aggregate(args)
-        df.insert(loc=0, column='pref', value=prefix)
+        df.insert(0, 'pref', prefix, True)
         dfs.append(df)
-    dfs = pd.concat(dfs)
+    dfs = pd.concat(dfs, sort=False)
 
     out_dir = args.in_dir if args.out_dir is None else args.out_dir
     out_file_name = os.path.join(out_dir, "results." + args.type)
