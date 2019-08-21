@@ -38,7 +38,14 @@ def aggregate(args):
                     param["start%s" % i] = pd.to_datetime(fl.splitlines()[0].split("Started on")[-1].strip())
                     param["states%s" % i] = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
                     param["time%s" % i] = float(fl.split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
-                    param["RAM%s" % i] = fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0].split('~')[0].strip()
+
+                    ram = fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0].split('~')
+                    xbytes = ''.join(filter(lambda c: not c.isdigit(), ram[0])).strip()
+                    ram = list(map(lambda s: "".join(filter(lambda c: c.isdigit(), s)), ram))
+                    ram = '.'.join(ram[:2]) if len(ram) > 1 else ram[0]
+                    ram += " " + xbytes
+                    param["RAM%s" % i] = ram
+
             return param
 
         param_logs = list(map(extract_param, run_logs))
