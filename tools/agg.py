@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 import os
+from functools import reduce
 
 
 def aggregate(args):
@@ -25,9 +26,8 @@ def aggregate(args):
             ram = s.split('~')
             xbytes = ''.join(filter(lambda c: not c.isdigit(), ram[0])).strip()
             ram = list(map(float, map(lambda s: "".join(filter(lambda c: c.isdigit(), s)), ram)))
-            if len(ram) > 1:
-                ram[0] += float(ram[1]) / 1024.
-            return "%0.3f %s" % (ram[0], xbytes)
+            res = reduce(lambda sm, v: v + sm / 1024, ram[::-1])
+            return "%0.3f %s" % (res, xbytes)
 
         def extract_param(log_name):
             param = log_name.split('-')
@@ -63,12 +63,14 @@ def aggregate(args):
                         states = last_line[-2]
                         ram = parse_ram(last_line[-4])
                         time = pd.to_timedelta(last_line[2]).total_seconds()
+                        print(ram)
 
             param["start%s" % i] = start
             param["states%s" % i] = states
             param["time%s" % i] = time
             param["layer%s" % i] = layer
             param["RAM%s" % i] = ram
+            # print(ram)
 
             return param
 
