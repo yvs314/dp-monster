@@ -63,14 +63,12 @@ def aggregate(args):
                         states = last_line[-2]
                         ram = parse_ram(last_line[-4])
                         time = pd.to_timedelta(last_line[2]).total_seconds()
-                        print(ram)
 
             param["start%s" % i] = start
             param["states%s" % i] = states
             param["time%s" % i] = time
             param["layer%s" % i] = layer
             param["RAM%s" % i] = ram
-            # print(ram)
 
             return param
 
