@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 import os
+from functools import reduce
 
 
 def aggregate(args):
@@ -21,30 +22,53 @@ def aggregate(args):
         run_dir = os.path.join(in_dir, run)
         run_logs = list(filter(lambda s: s.split('.')[-1].lower() == 'log', os.listdir(run_dir)))
 
+        def parse_ram(s):
+            ram = s.split('~')
+            xbytes = ''.join(filter(lambda c: not c.isdigit(), ram[0])).strip()
+            ram = list(map(float, map(lambda s: "".join(filter(lambda c: c.isdigit(), s)), ram)))
+            res = reduce(lambda sm, v: v + sm / 1024, ram[::-1])
+            return "%0.3f %s" % (res, xbytes)
+
         def extract_param(log_name):
             param = log_name.split('-')
             task_name = param[0]
             param[-1] = '.'.join(param[-1].split('.')[:-1])
             log_file_name = os.path.join(run_dir, log_name)
             dump_file_name = log_file_name[:-3] + 'dump'
+            i = run.split("run")[-1]
+
             param = dict(zip(range(1, len(param) + 1), param))
+
+            param['success'] = int(os.path.isfile(dump_file_name))
+            start, states, time, ram, layer = [None] * 5
 
             if os.path.isfile(dump_file_name):
                 with open(dump_file_name, "r") as f:
                     param['value'] = int(f.read().split("VALUE:")[1].splitlines()[0])
                 with open(log_file_name, "r") as f:
                     fl = f.read()
-                    i = run.split("run")[-1]
-                    param["start%s" % i] = pd.to_datetime(fl.splitlines()[0].split("Started on")[-1].strip())
-                    param["states%s" % i] = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
-                    param["time%s" % i] = float(fl.split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
+                    start = pd.to_datetime(fl.splitlines()[0].split("Started on")[-1].strip())
+                    states = fl.split("TOTAL STATES PROCESSED:")[-1].splitlines()[0].strip()
+                    time = float(fl.split("TOTAL DURATION IN SECONDS:").pop().splitlines()[0])
+                    ram = parse_ram(fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0])
+                    layer = fl.split("B;")[-3].splitlines()[-1].split(';')[0]
+            else:
+                layer = 0
+                with open(log_file_name, "r") as f:
+                    fl = f.read()
+                    start = pd.to_datetime(fl.splitlines()[0].split("Started on")[-1].strip())
+                    last_line = fl.splitlines()[-1].split(';')
+                    if last_line[0].isdigit():
+                        layer = last_line[0]
+                        states = last_line[-2]
+                        ram = parse_ram(last_line[-4])
+                        time = pd.to_timedelta(last_line[2]).total_seconds()
 
-                    ram = fl.split("RAM USAGE AT LAST LAYER:")[-1].splitlines()[0].split('~')
-                    xbytes = ''.join(filter(lambda c: not c.isdigit(), ram[0])).strip()
-                    ram = list(map(lambda s: "".join(filter(lambda c: c.isdigit(), s)), ram))
-                    ram = '.'.join(ram[:2]) if len(ram) > 1 else ram[0]
-                    ram += " " + xbytes
-                    param["RAM%s" % i] = ram
+            param["start%s" % i] = start
+            param["states%s" % i] = states
+            param["time%s" % i] = time
+            param["layer%s" % i] = layer
+            param["RAM%s" % i] = ram
 
             return param
 
