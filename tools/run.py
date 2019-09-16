@@ -111,6 +111,7 @@ if __name__ == "__main__":
         'prefix': args.prefix,
         'out_dir': args.out_dir,
         'force': args.force,
+        'nruns': args.nruns,
 
         'data_dir': data_dir,
         'executable': executable
@@ -126,7 +127,7 @@ if __name__ == "__main__":
 
     proc = []
     for task_dict in tasks_args:
-        for run in range(1, args.nruns + 1):
+        for run in range(1, int(task_dict['nruns']) + 1):
             proc.append(run_task(task_dict, run))
 
     # wait subprocess we run with slurm
