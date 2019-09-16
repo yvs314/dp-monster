@@ -40,8 +40,19 @@ def run_task(task_dict, run):
     command += " " + " ".join(task_dict['param'])
 
     print("Run DPM module on %s threads with command: %s" % (task_dict['threads'], command))
+
+    if task_dict['docker']:
+        parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+        thread_env = "OMP_THREAD_LIMIT=%s" % task_dict['threads']
+        docker_cmd = "docker run -w='/work/tools/%s' --env %s -it -v %s:/work dpm %s" % \
+                     (out_dir, thread_env, parent_dir, command)
+        command = docker_cmd
+
     if args.slurm:
-        command = "srun -t 20:0:0 --exclusive --mem=251G %s" % command
+        srun_cmd = "srun -t=%s --mem=%s -c=%s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
+        srun_cmd += " -p=%s" % task_dict['part'] if task_dict['part'] is not None else ""
+        srun_cmd += " --exclusive" if task_dict['exclusive'] else ""
+        command = srun_cmd + ' ' + command
         command = list(filter(len, command.split(' ')))
         return subprocess.Popen(command, stdout=subprocess.PIPE)
     else:
@@ -90,13 +101,19 @@ if __name__ == "__main__":
 
     parser.add_argument('--param', '-p', default="", help='Parameters for child dpm module spitted by comma',
                         type=lambda s: str(s).split(','))
-    parser.add_argument('--slurm', '-s', action='store_true', help='Use slurm or not')
     parser.add_argument('--out_dir', '-o', type=str, default=join_path("..", "results"),
                         help='Output directory. If not specified, ../results are used.')
     parser.add_argument('--force', '-f', action='store_true', help='Force run')
     parser.add_argument('--nruns', '-n', type=int, default=1, help='Number of runs')
     parser.add_argument('--prefix', type=str, default="", help='Prefix for run directories')
     parser.add_argument('--threads', type=int, default=1, help='Number of OMP_THREAD_LIMIT for subprocess')
+
+    parser.add_argument('--slurm', '-s', action='store_true', help='Use slurm or not')
+    parser.add_argument('--mem', type=str, default="251G", help='Memory limit for slurm')
+    parser.add_argument('--time', type=str, default="20:0:0", help='Time limit for slurm')
+    parser.add_argument('--exclusive', action='store_true', help='Exclusive run of slurm task')
+    parser.add_argument('--part', type=str, default=None, help='Partition for slurm task')
+    parser.add_argument('--docker', action='store_true', help='Use docker to run subprocess via slurm')
     args = parser.parse_args()
 
     data_dir = os.path.abspath(join_path("..", "data", "TSPLIB"))
@@ -106,12 +123,18 @@ if __name__ == "__main__":
     common_task_dict = {
         'task': '',
         'threads': args.threads,
-        'slurm': args.slurm,
         'param': args.param,
         'prefix': args.prefix,
         'out_dir': args.out_dir,
         'force': args.force,
         'nruns': args.nruns,
+
+        'slurm': args.slurm,
+        'mem': args.mem,
+        'time': args.time,
+        'exclusive': args.exclusive,
+        'part': args.part,
+        'docker': args.docker,
 
         'data_dir': data_dir,
         'executable': executable
