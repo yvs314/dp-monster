@@ -49,7 +49,7 @@ def run_task(task_dict, run):
                      (thread_env, parent_dir, bash_cmd)
         command = docker_cmd
 
-    if args.slurm:
+    if task_dict['slurm']:
         os.makedirs("./outs/", exist_ok=True)
         srun_cmd = "sbatch -o ./outs/slurm-%%j.out -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
         srun_cmd += " -p %s" % task_dict['part'] if task_dict['part'] is not None else ""
