@@ -54,8 +54,8 @@ def run_task(task_dict, run):
         srun_cmd += " -p %s" % task_dict['part'] if task_dict['part'] is not None else ""
         srun_cmd += " --exclusive" if task_dict['exclusive'] else ""
         command = srun_cmd + ' ' + command
-        command = list(filter(len, command.split(' ')))
-        return subprocess.Popen(command, stdout=subprocess.PIPE)
+        # command = list(filter(len, command.split(' ')))
+        return subprocess.Popen(command, shell=True)
     else:
         try:
             subprocess.run(command, shell=True, check=True, cwd=out_dir, env=env)
