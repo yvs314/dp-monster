@@ -44,13 +44,14 @@ def run_task(task_dict, run):
     if task_dict['docker']:
         parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
         thread_env = "OMP_THREAD_LIMIT=%s" % task_dict['threads']
-        docker_cmd = "docker run -w='/work/tools/%s' --env %s -it -v %s:/work dpm %s" % \
-                     (out_dir, thread_env, parent_dir, command)
+        bash_cmd = "bash -c 'cd tools && cd %s && %s'" % (out_dir, command)
+        docker_cmd = "docker run --env %s -it -v %s:/work dpm %s" % \
+                     (thread_env, parent_dir, bash_cmd)
         command = docker_cmd
 
     if args.slurm:
-        srun_cmd = "srun -t=%s --mem=%s -c=%s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
-        srun_cmd += " -p=%s" % task_dict['part'] if task_dict['part'] is not None else ""
+        srun_cmd = "srun -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
+        srun_cmd += " -p %s" % task_dict['part'] if task_dict['part'] is not None else ""
         srun_cmd += " --exclusive" if task_dict['exclusive'] else ""
         command = srun_cmd + ' ' + command
         command = list(filter(len, command.split(' ')))
