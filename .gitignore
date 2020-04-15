@@ -3,3 +3,14 @@ debug
 results
 .idea
 tools/outs
+
+# OS generated and temporary files #
+####################################
+*.swp
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
