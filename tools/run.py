@@ -118,6 +118,8 @@ if __name__ == "__main__":
     parser.add_argument('--docker', action='store_true', help='Use docker to run subprocess via slurm')
     args = parser.parse_args()
 
+    #a dumb, hacky way to process t-SOPLIB06 would be to switch data_dir to the following:
+    #data_dir = os.path.abspath(join_path("..", "data", "t-SOPLIB06"))
     data_dir = os.path.abspath(join_path("..", "data", "TSPLIB"))
     executable = os.path.abspath(join_path("..", "build", "dpm" + (".exe" if os.name == "nt" else "")))
     assert isfile(executable), "Executable file doesn't exist"
