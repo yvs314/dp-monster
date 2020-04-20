@@ -21,7 +21,8 @@ just bitsets & operations; no order yet
 
 //=========DIMENSION===CONSTANTS===================================/
 //max intended size is 384=64*6; max size in TSPLIB-SOP is 380
-const uint16_t refdim =384;
+//SOPLIB06 has up to 700 cities; bumping refdim to 16*44=704
+const uint16_t refdim =704;
 //const uint16_t refdim = 10;
 //max cluster label~65535
 using mtag = uint16_t;//in fact, 9 bits are enough
