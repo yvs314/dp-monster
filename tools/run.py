@@ -52,7 +52,8 @@ def run_task(task_dict, run):
     if task_dict['slurm']:
         os.makedirs("./outs/", exist_ok=True)
         os.makedirs(os.path.join(out_dir, "./outs/"), exist_ok=True)
-        srun_cmd = "srun -o ./outs/slurm-%%j.out -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
+        srun_cmd = "sbatch" if task_dict['docker'] else "srun"
+        srun_cmd += " -o ./outs/slurm-%%j.out -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
         srun_cmd += " -p %s" % task_dict['part'] if task_dict['part'] is not None else ""
         srun_cmd += " --exclusive" if task_dict['exclusive'] else ""
         command = srun_cmd + ' ' + command
