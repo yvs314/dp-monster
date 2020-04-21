@@ -51,12 +51,14 @@ def run_task(task_dict, run):
 
     if task_dict['slurm']:
         os.makedirs("./outs/", exist_ok=True)
-        srun_cmd = "sbatch -o ./outs/slurm-%%j.out -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
+        os.makedirs(os.path.join(out_dir, "./outs/"), exist_ok=True)
+        srun_cmd = "srun -o ./outs/slurm-%%j.out -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
         srun_cmd += " -p %s" % task_dict['part'] if task_dict['part'] is not None else ""
         srun_cmd += " --exclusive" if task_dict['exclusive'] else ""
         command = srun_cmd + ' ' + command
         # command = list(filter(len, command.split(' ')))
-        return subprocess.Popen(command, shell=True, env=env)
+        cwd = out_dir if not task_dict['docker'] else None
+        return subprocess.Popen(command, shell=True, env=env, cwd=cwd)
     else:
         try:
             subprocess.run(command, shell=True, check=True, cwd=out_dir, env=env)
