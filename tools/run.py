@@ -3,6 +3,7 @@ import csv
 import os
 import subprocess
 from os.path import isfile, join as join_path
+import time
 
 tasks = {
     "all": ["ESC07.sop", "ESC11.sop", "ESC12.sop", "ESC25.sop", "ESC47.sop", "ESC63.sop", "ESC78.sop", "br17.10.sop",
@@ -52,7 +53,8 @@ def run_task(task_dict, run):
     if task_dict['slurm']:
         os.makedirs("./outs/", exist_ok=True)
         os.makedirs(os.path.join(out_dir, "./outs/"), exist_ok=True)
-        srun_cmd = "sbatch" if task_dict['docker'] else "srun"
+        srun_cmd = "srun" #"sbatch" if task_dict['docker'] else "srun"
+        srun_cmd += f" -J {task}"
         srun_cmd += " -o ./outs/slurm-%%j.out -t %s --mem=%s -c %s" % (task_dict['time'], task_dict['mem'], task_dict['threads'])
         srun_cmd += " -p %s" % task_dict['part'] if task_dict['part'] is not None else ""
         srun_cmd += " --exclusive" if task_dict['exclusive'] else ""
@@ -156,11 +158,20 @@ if __name__ == "__main__":
         tasks_args = [get_arg_dict(args.task, common_task_dict)]
 
     proc = []
-    for task_dict in tasks_args:
-        for run in range(1, int(task_dict['nruns']) + 1):
-            proc.append(run_task(task_dict, run))
+    try:
+        for task_dict in tasks_args:
+            for run in range(1, int(task_dict['nruns']) + 1):
+                while len(proc) > 100:
+                    proc = list(filter(lambda p: p is not None and p.poll() is None, proc))
+                    time.sleep(5)
+                proc.append(run_task(task_dict, run))
 
-    # wait subprocess we run with slurm
-    for p in proc:
-        if p is not None:
-            p.wait()
+        # wait subprocess we run with slurm
+        for p in proc:
+            if p is not None:
+                p.wait()
+    finally:
+        for p in proc:
+            if p is not None:
+                p.kill()
+                p.terminate()
