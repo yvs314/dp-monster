@@ -62,11 +62,12 @@ memDefault="2G" #should be enough even for R.700* at H=10^5
 #=SEC.==TASK==FABRICATION===
 #big whopping List Comprehension, one *dict* entry for each parameter set
 to_csv = [dict(
+    data_dir="../data/t-SOPLIB06",
     prefix=pref+"_%s" % nThr,
     task=n,
     threads=nThr,
     d=d,t=t,H=H,
-    docker=1,
+#    docker=1,
     slurm=1,
     mem=memDefault,
     part='apollo',
