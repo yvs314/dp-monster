@@ -65,7 +65,7 @@ to_csv = [dict(
     task=n,
     threads=nThr,
     d=d,t=t,
-    docker=0, #no need for docker at this time
+#    docker=0, #no need for docker at this time
     slurm=1,
     mem=memDefault,
     part='apollo',
