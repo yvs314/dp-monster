@@ -75,6 +75,7 @@ A _solution_ is characterized by
 
 ## Caveats
 * all `/data` is stored with **git LFS**
+* build script requires OpenMP support; see legacy [single-thread release](https://github.com/yvs314/dp-monster/releases/tag/single-thread-clear) if it proves an obstacle.
 * UB _value_ is not reflected in naming; intended scheme is e.g. `INP-TYPE-FWD-DPBB-CHP-XXXX` for `--UB XXXX`
 * `--UB XXXX` has precedence over `-H YYYY`: the latter is ignored and DPBB is launched. 
 * DPBB is only implemented for `-t [TSP | BTSP]`
